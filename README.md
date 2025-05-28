@@ -74,5 +74,6 @@ mvn spring-boot:run
 ### 6. Kiểm tra
 - Mở trình duyệt truy cập: [http://localhost:8080](http://localhost:8080)
 - Kiểm tra logs để đảm bảo ứng dụng kết nối database thành công.
+- Truy cập trang Swagger UI tại: http://localhost:8080/swagger-ui/index.html
 
 ---
