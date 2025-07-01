@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.List;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -14,7 +16,8 @@ public class RoomDto {
     private Integer roomNumber;
     private Integer maxOccupancy;
     private String roomType;
-    private Double price;
     private String status;
     private String location;
+
+    private List<RoomPriceDto> prices;
 }

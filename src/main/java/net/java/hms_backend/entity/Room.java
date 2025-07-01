@@ -6,6 +6,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.List;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -27,12 +29,12 @@ public class Room {
     @Column(name = "room_type")
     private String roomType;
 
-    @Column(name = "price")
-    private Double price;
-
     @Column(name = "status")
     private String status;
 
     @Column(name = "location")
     private String location;
+
+    @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<RoomPrice> prices;
 }
