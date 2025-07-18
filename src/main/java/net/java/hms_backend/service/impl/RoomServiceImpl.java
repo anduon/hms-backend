@@ -56,21 +56,28 @@ public class RoomServiceImpl implements RoomService {
         room.setStatus(roomDto.getStatus());
         room.setLocation(roomDto.getLocation());
 
-        room.getPrices().clear();
-
         if (roomDto.getPrices() != null) {
-            roomDto.getPrices().forEach(priceDto -> {
-                var price = new net.java.hms_backend.entity.RoomPrice();
-                price.setPriceType(priceDto.getPriceType());
-                price.setBasePrice(priceDto.getBasePrice());
-                price.setRoom(room);
-                room.getPrices().add(price);
-            });
+            for (var priceDto : roomDto.getPrices()) {
+                var existingPriceOpt = room.getPrices().stream()
+                        .filter(p -> p.getPriceType() == priceDto.getPriceType())
+                        .findFirst();
+
+                if (existingPriceOpt.isPresent()) {
+                    existingPriceOpt.get().setBasePrice(priceDto.getBasePrice());
+                } else {
+                    var newPrice = new net.java.hms_backend.entity.RoomPrice();
+                    newPrice.setPriceType(priceDto.getPriceType());
+                    newPrice.setBasePrice(priceDto.getBasePrice());
+                    newPrice.setRoom(room);
+                    room.getPrices().add(newPrice);
+                }
+            }
         }
 
         Room updatedRoom = roomRepository.save(room);
         return RoomMapper.mapToRoomDto(updatedRoom);
     }
+
 
 
     @Override
