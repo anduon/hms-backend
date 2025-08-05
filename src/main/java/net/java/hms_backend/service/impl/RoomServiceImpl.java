@@ -2,6 +2,7 @@ package net.java.hms_backend.service.impl;
 
 import lombok.AllArgsConstructor;
 import net.java.hms_backend.dto.RoomDto;
+import net.java.hms_backend.dto.RoomFilterRequest;
 import net.java.hms_backend.entity.Promotion;
 import net.java.hms_backend.entity.Room;
 import net.java.hms_backend.exception.ResourceNotFoundException;
@@ -11,9 +12,16 @@ import net.java.hms_backend.service.PromotionService;
 import net.java.hms_backend.service.RoomService;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.criteria.*;
+
+
 
 @Service
 @AllArgsConstructor
@@ -21,6 +29,9 @@ public class RoomServiceImpl implements RoomService {
 
     private RoomRepository roomRepository;
     private final PromotionService promotionService;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     @Override
     public RoomDto createRoom(RoomDto roomDto) {
@@ -86,4 +97,54 @@ public class RoomServiceImpl implements RoomService {
                 .orElseThrow(() -> new ResourceNotFoundException("Room", "id", id));
         roomRepository.delete(room);
     }
+
+    @Override
+    public List<RoomDto> filterRooms(RoomFilterRequest filter) {
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Room> query = cb.createQuery(Room.class);
+        Root<Room> room = query.from(Room.class);
+        query.select(room).distinct(true);
+
+        List<Predicate> predicates = new ArrayList<>();
+
+        if (filter.getRoomType() != null)
+            predicates.add(cb.equal(room.get("roomType"), filter.getRoomType()));
+
+        if (filter.getStatus() != null)
+            predicates.add(cb.equal(room.get("status"), filter.getStatus()));
+
+        if (filter.getLocation() != null)
+            predicates.add(cb.equal(room.get("location"), filter.getLocation()));
+
+        if (filter.getMaxOccupancy() != null)
+            predicates.add(cb.greaterThanOrEqualTo(room.get("maxOccupancy"), filter.getMaxOccupancy()));
+
+        if (filter.getDesiredCheckIn() != null && filter.getDesiredCheckOut() != null) {
+            Subquery<Long> subquery = query.subquery(Long.class);
+            Root<net.java.hms_backend.entity.Booking> booking = subquery.from(net.java.hms_backend.entity.Booking.class);
+            Join<net.java.hms_backend.entity.Booking, Room> bookingRoom = booking.join("room");
+
+            subquery.select(cb.literal(1L));
+
+            Predicate overlap = cb.and(
+                    cb.equal(bookingRoom.get("id"), room.get("id")),
+                    cb.lessThan(booking.get("checkInDate"), filter.getDesiredCheckOut()),
+                    cb.greaterThan(booking.get("checkOutDate"), filter.getDesiredCheckIn()),
+                    cb.notEqual(booking.get("status"), "CANCELLED")
+            );
+
+            subquery.where(overlap);
+            predicates.add(cb.not(cb.exists(subquery)));
+        }
+
+        query.where(cb.and(predicates.toArray(new Predicate[0])));
+        List<Room> result = entityManager.createQuery(query).getResultList();
+
+        Optional<Promotion> promotionOpt = promotionService.getActivePromotion();
+
+        return result.stream()
+                .map(r -> RoomMapper.mapToRoomDto(r, promotionOpt))
+                .collect(Collectors.toList());
+    }
+
 }

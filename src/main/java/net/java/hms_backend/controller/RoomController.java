@@ -2,6 +2,8 @@ package net.java.hms_backend.controller;
 
 import lombok.RequiredArgsConstructor;
 import net.java.hms_backend.dto.RoomDto;
+import net.java.hms_backend.dto.RoomFilterRequest;
+import net.java.hms_backend.entity.Room;
 import net.java.hms_backend.service.RoomService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -48,5 +50,12 @@ public class RoomController {
         roomService.deleteRoom(id);
         return ResponseEntity.ok("Room deleted successfully.");
     }
+
+    @PostMapping("/filter")
+    public ResponseEntity<List<RoomDto>> filterRooms(@RequestBody RoomFilterRequest request) {
+        List<RoomDto> rooms = roomService.filterRooms(request);
+        return ResponseEntity.ok(rooms);
+    }
+
 
 }

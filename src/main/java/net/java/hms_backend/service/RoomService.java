@@ -16,4 +16,6 @@ public interface RoomService {
 
     void deleteRoom(Long id);
 
+    List<RoomDto> filterRooms(RoomFilterRequest request);
+
 }

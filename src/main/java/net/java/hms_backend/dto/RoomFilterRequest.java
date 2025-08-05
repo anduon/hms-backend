@@ -5,7 +5,10 @@ import java.time.LocalDateTime;
 
 @Data
 public class RoomFilterRequest {
-    private LocalDateTime startTime;
-    private LocalDateTime endTime;
-    private Integer numberOfGuests;
+    private String roomType;
+    private String status;
+    private String location;
+    private Integer maxOccupancy;
+    private LocalDateTime desiredCheckIn;
+    private LocalDateTime desiredCheckOut;
 }
