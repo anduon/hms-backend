@@ -3,8 +3,8 @@ package net.java.hms_backend.controller;
 import lombok.RequiredArgsConstructor;
 import net.java.hms_backend.dto.RoomDto;
 import net.java.hms_backend.dto.RoomFilterRequest;
-import net.java.hms_backend.entity.Room;
 import net.java.hms_backend.service.RoomService;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -27,10 +27,12 @@ public class RoomController {
     }
 
     @GetMapping
-    public ResponseEntity<List<RoomDto>> getAllRooms() {
-        List<RoomDto> rooms = roomService.getAllRooms();
+    public ResponseEntity<Page<RoomDto>> getAllRooms(@RequestParam(defaultValue = "0") int page,
+                                                     @RequestParam(defaultValue = "10") int size) {
+        Page<RoomDto> rooms = roomService.getAllRooms(page, size);
         return ResponseEntity.ok(rooms);
     }
+
 
     @GetMapping("/{id}")
     public ResponseEntity<RoomDto> getRoomById(@PathVariable("id") Long id) {
@@ -52,10 +54,14 @@ public class RoomController {
     }
 
     @PostMapping("/filter")
-    public ResponseEntity<List<RoomDto>> filterRooms(@RequestBody RoomFilterRequest request) {
-        List<RoomDto> rooms = roomService.filterRooms(request);
+    public ResponseEntity<Page<RoomDto>> filterRooms(
+            @RequestBody RoomFilterRequest request,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Page<RoomDto> rooms = roomService.filterRooms(request, page, size);
         return ResponseEntity.ok(rooms);
     }
+
 
 
 }

@@ -10,6 +10,10 @@ import net.java.hms_backend.mapper.RoomMapper;
 import net.java.hms_backend.repository.RoomRepository;
 import net.java.hms_backend.service.PromotionService;
 import net.java.hms_backend.service.RoomService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -41,12 +45,15 @@ public class RoomServiceImpl implements RoomService {
     }
 
     @Override
-    public List<RoomDto> getAllRooms() {
+    public Page<RoomDto> getAllRooms(int page, int size) {
         Optional<Promotion> promotionOpt = promotionService.getActivePromotion();
-        return roomRepository.findAll().stream()
-                .map(room -> RoomMapper.mapToRoomDto(room, promotionOpt))
-                .collect(Collectors.toList());
+
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Room> roomsPage = roomRepository.findAll(pageable);
+
+        return roomsPage.map(room -> RoomMapper.mapToRoomDto(room, promotionOpt));
     }
+
 
 
     @Override
@@ -99,7 +106,7 @@ public class RoomServiceImpl implements RoomService {
     }
 
     @Override
-    public List<RoomDto> filterRooms(RoomFilterRequest filter) {
+    public Page<RoomDto> filterRooms(RoomFilterRequest filter, int page, int size) {
         CriteriaBuilder cb = entityManager.getCriteriaBuilder();
         CriteriaQuery<Room> query = cb.createQuery(Room.class);
         Root<Room> room = query.from(Room.class);
@@ -138,13 +145,26 @@ public class RoomServiceImpl implements RoomService {
         }
 
         query.where(cb.and(predicates.toArray(new Predicate[0])));
-        List<Room> result = entityManager.createQuery(query).getResultList();
+
+        Pageable pageable = PageRequest.of(page, size);
+
+        List<Room> result = entityManager.createQuery(query)
+                .setFirstResult(page * size)
+                .setMaxResults(size)
+                .getResultList();
+
+        CriteriaQuery<Long> countQuery = cb.createQuery(Long.class);
+        Root<Room> countRoot = countQuery.from(Room.class);
+        countQuery.select(cb.countDistinct(countRoot));
+        countQuery.where(cb.and(predicates.toArray(new Predicate[0])));
+        Long total = entityManager.createQuery(countQuery).getSingleResult();
+
+        Page<Room> roomsPage = new PageImpl<>(result, pageable, total);
 
         Optional<Promotion> promotionOpt = promotionService.getActivePromotion();
 
-        return result.stream()
-                .map(r -> RoomMapper.mapToRoomDto(r, promotionOpt))
-                .collect(Collectors.toList());
+        return roomsPage.map(roomEntity -> RoomMapper.mapToRoomDto(roomEntity, promotionOpt));
     }
+
 
 }

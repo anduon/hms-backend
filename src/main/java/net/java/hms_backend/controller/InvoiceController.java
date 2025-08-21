@@ -3,6 +3,7 @@ package net.java.hms_backend.controller;
 import lombok.AllArgsConstructor;
 import net.java.hms_backend.dto.InvoiceDto;
 import net.java.hms_backend.service.InvoiceService;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -25,8 +26,9 @@ public class InvoiceController {
     }
 
     @GetMapping
-    public ResponseEntity<List<InvoiceDto>> getAllInvoices() {
-        return ResponseEntity.ok(invoiceService.getAllInvoices());
+    public ResponseEntity<Page<InvoiceDto>> getAllInvoices(@RequestParam(defaultValue = "0") int page,
+                                                           @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(invoiceService.getAllInvoices(page, size));
     }
 
     @GetMapping("/{id}")

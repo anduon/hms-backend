@@ -1,5 +1,7 @@
 package net.java.hms_backend.service.impl;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import lombok.AllArgsConstructor;
 import net.java.hms_backend.dto.BookingDto;
 import net.java.hms_backend.entity.Booking;
@@ -9,10 +11,13 @@ import net.java.hms_backend.mapper.BookingMapper;
 import net.java.hms_backend.repository.BookingRepository;
 import net.java.hms_backend.repository.RoomRepository;
 import net.java.hms_backend.service.BookingService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.stream.Collectors;
+
 
 @Service
 @AllArgsConstructor
@@ -49,10 +54,10 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    public List<BookingDto> getAllBookings() {
-        return bookingRepository.findAll().stream()
-                .map(BookingMapper::toDto)
-                .collect(Collectors.toList());
+    public Page<BookingDto> getAllBookings(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Booking> bookingsPage = bookingRepository.findAll(pageable);
+        return bookingsPage.map(BookingMapper::toDto);
     }
 
     @Override
@@ -99,4 +104,5 @@ public class BookingServiceImpl implements BookingService {
                 .orElseThrow(() -> new ResourceNotFoundException("Booking", "id", id));
         bookingRepository.delete(booking);
     }
+
 }

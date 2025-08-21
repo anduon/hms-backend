@@ -2,7 +2,7 @@ package net.java.hms_backend.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import net.java.hms_backend.dto.AssetDto;
-import net.java.hms_backend.dto.AssetFilterRequestDto;
+import net.java.hms_backend.dto.AssetFilterRequest;
 import net.java.hms_backend.entity.Asset;
 import net.java.hms_backend.entity.Room;
 import net.java.hms_backend.exception.ResourceNotFoundException;
@@ -10,6 +10,10 @@ import net.java.hms_backend.mapper.AssetMapper;
 import net.java.hms_backend.repository.AssetRepository;
 import net.java.hms_backend.repository.RoomRepository;
 import net.java.hms_backend.service.AssetService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -35,10 +39,11 @@ public class AssetServiceImpl implements AssetService {
     }
 
     @Override
-    public List<AssetDto> getAllAssets() {
-        return assetRepository.findAll().stream()
-                .map(AssetMapper::toDto)
-                .collect(Collectors.toList());
+    public Page<AssetDto> getAllAssets(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Asset> assetsPage = assetRepository.findAll(pageable);
+
+        return assetsPage.map(AssetMapper::toDto);
     }
 
     @Override
@@ -71,7 +76,7 @@ public class AssetServiceImpl implements AssetService {
     }
 
     @Override
-    public List<AssetDto> searchAssets(AssetFilterRequestDto filter) {
+    public Page<AssetDto> searchAssets(AssetFilterRequest filter, int page, int size) {
         List<Asset> assets = assetRepository.findAll();
         Stream<Asset> stream = assets.stream();
 
@@ -107,7 +112,17 @@ public class AssetServiceImpl implements AssetService {
             stream = stream.filter(a -> a.getRoom().getRoomNumber().equals(filter.getRoomNumber()));
         }
 
-        return stream.map(AssetMapper::toDto).collect(Collectors.toList());
+        List<Asset> filteredAssets = stream.collect(Collectors.toList());
+
+        Pageable pageable = PageRequest.of(page, size);
+        int start = Math.min((int) pageable.getOffset(), filteredAssets.size());
+        int end = Math.min((start + pageable.getPageSize()), filteredAssets.size());
+
+        List<Asset> pagedAssets = filteredAssets.subList(start, end);
+
+        Page<Asset> assetsPage = new PageImpl<>(pagedAssets, pageable, filteredAssets.size());
+
+        return assetsPage.map(AssetMapper::toDto);
     }
 
 }

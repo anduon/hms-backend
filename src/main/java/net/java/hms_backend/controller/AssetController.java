@@ -2,8 +2,9 @@ package net.java.hms_backend.controller;
 
 import lombok.RequiredArgsConstructor;
 import net.java.hms_backend.dto.AssetDto;
-import net.java.hms_backend.dto.AssetFilterRequestDto;
+import net.java.hms_backend.dto.AssetFilterRequest;
 import net.java.hms_backend.service.AssetService;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,8 +23,9 @@ public class AssetController {
     }
 
     @GetMapping
-    public ResponseEntity<List<AssetDto>> getAllAssets() {
-        return ResponseEntity.ok(assetService.getAllAssets());
+    public ResponseEntity<Page<AssetDto>> getAllAssets(@RequestParam(defaultValue = "0") int page,
+                                                       @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(assetService.getAllAssets(page, size));
     }
 
     @GetMapping("/room/{roomId}")
@@ -43,8 +45,10 @@ public class AssetController {
     }
 
     @PostMapping("/search")
-    public ResponseEntity<List<AssetDto>> searchAssets(@RequestBody AssetFilterRequestDto filter) {
-        return ResponseEntity.ok(assetService.searchAssets(filter));
+    public ResponseEntity<Page<AssetDto>> searchAssets(@RequestBody AssetFilterRequest filter,
+                                                       @RequestParam(defaultValue = "0") int page,
+                                                       @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(assetService.searchAssets(filter, page, size));
     }
 
 }

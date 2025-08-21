@@ -8,6 +8,9 @@ import net.java.hms_backend.mapper.InvoiceMapper;
 import net.java.hms_backend.repository.BookingRepository;
 import net.java.hms_backend.repository.InvoiceRepository;
 import net.java.hms_backend.service.InvoiceService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
@@ -69,12 +72,12 @@ public class InvoiceServiceImpl implements InvoiceService {
     }
 
     @Override
-    public List<InvoiceDto> getAllInvoices() {
-        return invoiceRepository.findAll()
-                .stream()
-                .map(InvoiceMapper::mapToInvoiceDto)
-                .collect(Collectors.toList());
+    public Page<InvoiceDto> getAllInvoices(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Invoice> invoicesPage = invoiceRepository.findAll(pageable);
+        return invoicesPage.map(InvoiceMapper::mapToInvoiceDto);
     }
+
 
     @Override
     public InvoiceDto updateInvoice(Long id, InvoiceDto invoiceDto) {

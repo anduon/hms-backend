@@ -2,14 +2,15 @@ package net.java.hms_backend.controller;
 
 import lombok.RequiredArgsConstructor;
 import net.java.hms_backend.dto.PromotionDto;
+import net.java.hms_backend.dto.PromotionFilterRequest;
 import net.java.hms_backend.entity.Promotion;
 import net.java.hms_backend.mapper.PromotionMapper;
 import net.java.hms_backend.service.PromotionService;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -25,8 +26,9 @@ public class PromotionController {
     }
 
     @GetMapping
-    public ResponseEntity<List<PromotionDto>> getAllPromotions() {
-        return ResponseEntity.ok(promotionService.getAllPromotions());
+    public ResponseEntity<Page<PromotionDto>> getAllPromotions(@RequestParam(defaultValue = "0") int page,
+                                                               @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(promotionService.getAllPromotions(page, size));
     }
 
     @GetMapping("/{id}")
@@ -52,5 +54,13 @@ public class PromotionController {
         return promotionOpt
                 .map(promotion -> ResponseEntity.ok(PromotionMapper.toDto(promotion)))
                 .orElseGet(() -> ResponseEntity.noContent().build());
+    }
+
+    @PostMapping("/search")
+    public ResponseEntity<Page<PromotionDto>> searchPromotions(
+            @RequestBody PromotionFilterRequest request,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(promotionService.searchPromotions(request, page, size));
     }
 }

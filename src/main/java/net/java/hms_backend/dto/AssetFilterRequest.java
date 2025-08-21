@@ -5,7 +5,7 @@ import lombok.Data;
 import java.time.LocalDate;
 
 @Data
-public class AssetFilterRequestDto {
+public class AssetFilterRequest {
     private String name;
     private String category;
     private String condition;
