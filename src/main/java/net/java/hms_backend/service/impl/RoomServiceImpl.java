@@ -2,21 +2,40 @@ package net.java.hms_backend.service.impl;
 
 import lombok.AllArgsConstructor;
 import net.java.hms_backend.dto.RoomDto;
+import net.java.hms_backend.dto.RoomFilterRequest;
+import net.java.hms_backend.entity.Promotion;
 import net.java.hms_backend.entity.Room;
 import net.java.hms_backend.exception.ResourceNotFoundException;
 import net.java.hms_backend.mapper.RoomMapper;
 import net.java.hms_backend.repository.RoomRepository;
+import net.java.hms_backend.service.PromotionService;
 import net.java.hms_backend.service.RoomService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
+
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.criteria.*;
+
+
 
 @Service
 @AllArgsConstructor
 public class RoomServiceImpl implements RoomService {
 
     private RoomRepository roomRepository;
+    private final PromotionService promotionService;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     @Override
     public RoomDto createRoom(RoomDto roomDto) {
@@ -26,12 +45,16 @@ public class RoomServiceImpl implements RoomService {
     }
 
     @Override
-    public List<RoomDto> getAllRooms() {
-        List<Room> rooms = roomRepository.findAll();
-        return rooms.stream()
-                .map(RoomMapper::mapToRoomDto)
-                .collect(Collectors.toList());
+    public Page<RoomDto> getAllRooms(int page, int size) {
+        Optional<Promotion> promotionOpt = promotionService.getActivePromotion();
+
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Room> roomsPage = roomRepository.findAll(pageable);
+
+        return roomsPage.map(room -> RoomMapper.mapToRoomDto(room, promotionOpt));
     }
+
+
 
     @Override
     public RoomDto getRoomById(Long id) {
@@ -48,13 +71,32 @@ public class RoomServiceImpl implements RoomService {
         room.setRoomNumber(roomDto.getRoomNumber());
         room.setMaxOccupancy(roomDto.getMaxOccupancy());
         room.setRoomType(roomDto.getRoomType());
-        room.setPrice(roomDto.getPrice());
         room.setStatus(roomDto.getStatus());
         room.setLocation(roomDto.getLocation());
+
+        if (roomDto.getPrices() != null) {
+            for (var priceDto : roomDto.getPrices()) {
+                var existingPriceOpt = room.getPrices().stream()
+                        .filter(p -> p.getPriceType() == priceDto.getPriceType())
+                        .findFirst();
+
+                if (existingPriceOpt.isPresent()) {
+                    existingPriceOpt.get().setBasePrice(priceDto.getBasePrice());
+                } else {
+                    var newPrice = new net.java.hms_backend.entity.RoomPrice();
+                    newPrice.setPriceType(priceDto.getPriceType());
+                    newPrice.setBasePrice(priceDto.getBasePrice());
+                    newPrice.setRoom(room);
+                    room.getPrices().add(newPrice);
+                }
+            }
+        }
 
         Room updatedRoom = roomRepository.save(room);
         return RoomMapper.mapToRoomDto(updatedRoom);
     }
+
+
 
     @Override
     public void deleteRoom(Long id) {
@@ -62,4 +104,67 @@ public class RoomServiceImpl implements RoomService {
                 .orElseThrow(() -> new ResourceNotFoundException("Room", "id", id));
         roomRepository.delete(room);
     }
+
+    @Override
+    public Page<RoomDto> filterRooms(RoomFilterRequest filter, int page, int size) {
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Room> query = cb.createQuery(Room.class);
+        Root<Room> room = query.from(Room.class);
+        query.select(room).distinct(true);
+
+        List<Predicate> predicates = new ArrayList<>();
+
+        if (filter.getRoomType() != null)
+            predicates.add(cb.equal(room.get("roomType"), filter.getRoomType()));
+
+        if (filter.getStatus() != null)
+            predicates.add(cb.equal(room.get("status"), filter.getStatus()));
+
+        if (filter.getLocation() != null)
+            predicates.add(cb.equal(room.get("location"), filter.getLocation()));
+
+        if (filter.getMaxOccupancy() != null)
+            predicates.add(cb.greaterThanOrEqualTo(room.get("maxOccupancy"), filter.getMaxOccupancy()));
+
+        if (filter.getDesiredCheckIn() != null && filter.getDesiredCheckOut() != null) {
+            Subquery<Long> subquery = query.subquery(Long.class);
+            Root<net.java.hms_backend.entity.Booking> booking = subquery.from(net.java.hms_backend.entity.Booking.class);
+            Join<net.java.hms_backend.entity.Booking, Room> bookingRoom = booking.join("room");
+
+            subquery.select(cb.literal(1L));
+
+            Predicate overlap = cb.and(
+                    cb.equal(bookingRoom.get("id"), room.get("id")),
+                    cb.lessThan(booking.get("checkInDate"), filter.getDesiredCheckOut()),
+                    cb.greaterThan(booking.get("checkOutDate"), filter.getDesiredCheckIn()),
+                    cb.notEqual(booking.get("status"), "CANCELLED")
+            );
+
+            subquery.where(overlap);
+            predicates.add(cb.not(cb.exists(subquery)));
+        }
+
+        query.where(cb.and(predicates.toArray(new Predicate[0])));
+
+        Pageable pageable = PageRequest.of(page, size);
+
+        List<Room> result = entityManager.createQuery(query)
+                .setFirstResult(page * size)
+                .setMaxResults(size)
+                .getResultList();
+
+        CriteriaQuery<Long> countQuery = cb.createQuery(Long.class);
+        Root<Room> countRoot = countQuery.from(Room.class);
+        countQuery.select(cb.countDistinct(countRoot));
+        countQuery.where(cb.and(predicates.toArray(new Predicate[0])));
+        Long total = entityManager.createQuery(countQuery).getSingleResult();
+
+        Page<Room> roomsPage = new PageImpl<>(result, pageable, total);
+
+        Optional<Promotion> promotionOpt = promotionService.getActivePromotion();
+
+        return roomsPage.map(roomEntity -> RoomMapper.mapToRoomDto(roomEntity, promotionOpt));
+    }
+
+
 }
