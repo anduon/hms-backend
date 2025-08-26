@@ -2,6 +2,7 @@ package net.java.hms_backend.controller;
 
 import lombok.AllArgsConstructor;
 import net.java.hms_backend.dto.InvoiceDto;
+import net.java.hms_backend.dto.InvoiceFilterRequest;
 import net.java.hms_backend.service.InvoiceService;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
@@ -9,8 +10,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.io.IOException;
 import org.springframework.http.HttpHeaders;
-
-import java.util.List;
 
 @AllArgsConstructor
 @RestController
@@ -45,6 +44,15 @@ public class InvoiceController {
     public ResponseEntity<String> deleteInvoice(@PathVariable Long id) {
         invoiceService.deleteInvoice(id);
         return ResponseEntity.ok("Invoice deleted successfully.");
+    }
+
+    @PostMapping("/filter")
+    public ResponseEntity<Page<InvoiceDto>> filterInvoices(
+            @RequestBody InvoiceFilterRequest filter,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Page<InvoiceDto> invoices = invoiceService.filterInvoices(filter, page, size);
+        return ResponseEntity.ok(invoices);
     }
 
     @GetMapping("{id}/pdf")

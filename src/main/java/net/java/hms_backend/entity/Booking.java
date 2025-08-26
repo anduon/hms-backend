@@ -25,6 +25,7 @@ public class Booking {
     private String guestNationality;
 
     @ManyToOne
+    @JoinColumn(name = "room_id")
     private Room room;
 
     private LocalDateTime checkInDate;

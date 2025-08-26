@@ -1,7 +1,14 @@
 package net.java.hms_backend.service.impl;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 import lombok.AllArgsConstructor;
 import net.java.hms_backend.dto.InvoiceDto;
+import net.java.hms_backend.dto.InvoiceFilterRequest;
 import net.java.hms_backend.entity.*;
 import net.java.hms_backend.exception.ResourceNotFoundException;
 import net.java.hms_backend.mapper.InvoiceMapper;
@@ -9,6 +16,7 @@ import net.java.hms_backend.repository.BookingRepository;
 import net.java.hms_backend.repository.InvoiceRepository;
 import net.java.hms_backend.service.InvoiceService;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -16,14 +24,13 @@ import org.springframework.stereotype.Service;
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import com.lowagie.text.*;
 import com.lowagie.text.pdf.PdfPCell;
 import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
-import java.awt.Color;
 import net.java.hms_backend.entity.Invoice;
 
 @Service
@@ -32,6 +39,9 @@ public class InvoiceServiceImpl implements InvoiceService {
 
     private final InvoiceRepository invoiceRepository;
     private final BookingRepository bookingRepository;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     @Override
     public InvoiceDto createInvoice(InvoiceDto invoiceDto) {
@@ -105,6 +115,70 @@ public class InvoiceServiceImpl implements InvoiceService {
         Invoice invoice = invoiceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Invoice", "id", id));
         invoiceRepository.delete(invoice);
+    }
+
+    @Override
+    public Page<InvoiceDto> filterInvoices(InvoiceFilterRequest filter, int page, int size) {
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+
+        CriteriaQuery<Invoice> query = cb.createQuery(Invoice.class);
+        Root<Invoice> invoice = query.from(Invoice.class);
+        query.select(invoice).distinct(true);
+
+        List<Predicate> predicates = buildPredicates(filter, cb, invoice);
+        query.where(cb.and(predicates.toArray(new Predicate[0])));
+
+        Pageable pageable = PageRequest.of(page, size);
+
+        List<Invoice> result = entityManager.createQuery(query)
+                .setFirstResult((int) pageable.getOffset())
+                .setMaxResults(pageable.getPageSize())
+                .getResultList();
+
+        CriteriaQuery<Long> countQuery = cb.createQuery(Long.class);
+        Root<Invoice> countRoot = countQuery.from(Invoice.class);
+        List<Predicate> countPredicates = buildPredicates(filter, cb, countRoot);
+
+        countQuery.select(cb.countDistinct(countRoot));
+        countQuery.where(cb.and(countPredicates.toArray(new Predicate[0])));
+        Long total = entityManager.createQuery(countQuery).getSingleResult();
+
+        Page<Invoice> invoicePage = new PageImpl<>(result, pageable, total);
+        return invoicePage.map(InvoiceMapper::mapToInvoiceDto);
+    }
+
+    private List<Predicate> buildPredicates(InvoiceFilterRequest filter, CriteriaBuilder cb, Root<Invoice> root) {
+        List<Predicate> predicates = new ArrayList<>();
+
+        if (filter.getMinAmount() != null) {
+            predicates.add(cb.greaterThanOrEqualTo(root.get("amount"), filter.getMinAmount()));
+        }
+        if (filter.getMaxAmount() != null) {
+            predicates.add(cb.lessThanOrEqualTo(root.get("amount"), filter.getMaxAmount()));
+        }
+        if (filter.getStatus() != null && !filter.getStatus().isEmpty()) {
+            predicates.add(cb.equal(root.get("status"), filter.getStatus()));
+        }
+        if (filter.getIssuedDateFrom() != null) {
+            predicates.add(cb.greaterThanOrEqualTo(root.get("issuedDate"), filter.getIssuedDateFrom()));
+        }
+        if (filter.getIssuedDateTo() != null) {
+            predicates.add(cb.lessThanOrEqualTo(root.get("issuedDate"), filter.getIssuedDateTo()));
+        }
+        if (filter.getDueDateFrom() != null) {
+            predicates.add(cb.greaterThanOrEqualTo(root.get("dueDate"), filter.getDueDateFrom()));
+        }
+        if (filter.getDueDateTo() != null) {
+            predicates.add(cb.lessThanOrEqualTo(root.get("dueDate"), filter.getDueDateTo()));
+        }
+        if (filter.getPaymentMethod() != null && !filter.getPaymentMethod().isEmpty()) {
+            predicates.add(cb.equal(root.get("paymentMethod"), filter.getPaymentMethod()));
+        }
+        if (filter.getBookingId() != null) {
+            predicates.add(cb.equal(root.get("booking").get("id"), filter.getBookingId()));
+        }
+
+        return predicates;
     }
 
     @Override
