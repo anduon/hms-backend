@@ -41,4 +41,7 @@ public class Room {
     @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Asset> assets;
 
+    @OneToMany(mappedBy = "room")
+    private List<Booking> bookings;
+
 }

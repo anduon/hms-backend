@@ -34,17 +34,7 @@ DB_PASSWORD=matkhau
 CREATE DATABASE ten_database;
 ```
 
-### 4. Cấu hình `application.properties` trong `src/main/resources`:
-```properties
-spring.datasource.url=${DB_URL}
-spring.datasource.username=${DB_USERNAME}
-spring.datasource.password=${DB_PASSWORD}
-
-spring.jpa.hibernate.ddl-auto=update
-spring.jpa.show-sql=true
-```
-
-### 5. Chạy ứng dụng
+### 4. Chạy ứng dụng
 
 #### Cách 1: Qua terminal (Linux/macOS)
 ```bash
@@ -71,7 +61,7 @@ mvn spring-boot:run
 - Chạy class chính `HmsBackendApplication.java`.
 - Thêm biến môi trường `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` trong Run Configuration.
 
-### 6. Kiểm tra
+### 5. Kiểm tra
 - Mở trình duyệt truy cập: [http://localhost:8080](http://localhost:8080)
 - Kiểm tra logs để đảm bảo ứng dụng kết nối database thành công.
 - Truy cập trang Swagger UI tại: http://localhost:8080/swagger-ui/index.html
