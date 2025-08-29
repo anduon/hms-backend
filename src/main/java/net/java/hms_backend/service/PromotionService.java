@@ -4,8 +4,6 @@ import net.java.hms_backend.dto.PromotionDto;
 import net.java.hms_backend.dto.PromotionFilterRequest;
 import net.java.hms_backend.entity.Promotion;
 import org.springframework.data.domain.Page;
-
-import java.util.List;
 import java.util.Optional;
 
 public interface PromotionService {

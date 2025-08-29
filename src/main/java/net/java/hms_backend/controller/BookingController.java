@@ -3,8 +3,6 @@ package net.java.hms_backend.controller;
 import lombok.AllArgsConstructor;
 import net.java.hms_backend.dto.BookingDto;
 import net.java.hms_backend.dto.BookingFilterRequest;
-import net.java.hms_backend.dto.RoomDto;
-import net.java.hms_backend.dto.RoomFilterRequest;
 import net.java.hms_backend.service.BookingService;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;

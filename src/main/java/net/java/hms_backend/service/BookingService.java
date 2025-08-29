@@ -4,8 +4,6 @@ import net.java.hms_backend.dto.BookingDto;
 import net.java.hms_backend.dto.BookingFilterRequest;
 import org.springframework.data.domain.Page;
 
-import java.util.List;
-
 public interface BookingService {
     BookingDto createBooking(BookingDto bookingDto);
     BookingDto getBookingById(Long id);

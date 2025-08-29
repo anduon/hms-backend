@@ -4,8 +4,6 @@ import net.java.hms_backend.dto.RoomDto;
 import net.java.hms_backend.dto.RoomFilterRequest;
 import org.springframework.data.domain.Page;
 
-import java.util.List;
-
 public interface RoomService {
     RoomDto createRoom(RoomDto roomDto);
 
