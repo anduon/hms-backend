@@ -11,7 +11,7 @@ public class BookingDto {
     private String guestFullName;
     private String guestIdNumber;
     private String guestNationality;
-    private Long roomId;
+    private Integer roomNumber;
 
     private LocalDateTime checkInDate;
     private LocalDateTime checkOutDate;

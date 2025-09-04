@@ -12,6 +12,7 @@ import net.java.hms_backend.dto.BookingDto;
 import net.java.hms_backend.dto.BookingFilterRequest;
 import net.java.hms_backend.entity.Booking;
 import net.java.hms_backend.entity.Room;
+import net.java.hms_backend.exception.BookingConflictException;
 import net.java.hms_backend.exception.ResourceNotFoundException;
 import net.java.hms_backend.mapper.BookingMapper;
 import net.java.hms_backend.repository.BookingRepository;
@@ -39,17 +40,17 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     public BookingDto createBooking(BookingDto dto) {
-        Room room = roomRepository.findById(dto.getRoomId())
-                .orElseThrow(() -> new ResourceNotFoundException("Room", "id", dto.getRoomId()));
+        Room room = roomRepository.findByRoomNumber(dto.getRoomNumber())
+                .orElseThrow(() -> new ResourceNotFoundException("Room", "roomNumber", dto.getRoomNumber()));
 
         List<Booking> overlappingBookings = bookingRepository.findOverlappingBookings(
-                dto.getRoomId(),
+                room.getId(),
                 dto.getCheckInDate(),
                 dto.getCheckOutDate()
         );
 
         if (!overlappingBookings.isEmpty()) {
-            throw new IllegalArgumentException("The selected room is already booked during the requested period.");
+            throw new BookingConflictException("Room is already booked during the requested period.");
         }
 
         Booking booking = BookingMapper.toEntity(dto, room);
@@ -75,24 +76,23 @@ public class BookingServiceImpl implements BookingService {
     public BookingDto updateBooking(Long id, BookingDto dto) {
         Booking booking = bookingRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking", "id", id));
-        if (dto.getRoomId() != null && !dto.getRoomId().equals(booking.getRoom().getId())) {
-            Room room = roomRepository.findById(dto.getRoomId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Room", "id", dto.getRoomId()));
+        if (dto.getRoomNumber() != null && !dto.getRoomNumber().equals(booking.getRoom().getRoomNumber())) {
+            Room room = roomRepository.findByRoomNumber(dto.getRoomNumber())
+                    .orElseThrow(() -> new ResourceNotFoundException("Room", "roomNumber", dto.getRoomNumber()));
             booking.setRoom(room);
         }
         if (dto.getCheckInDate() != null && dto.getCheckOutDate() != null) {
+            Long roomId = booking.getRoom().getId();
             List<Booking> overlappingBookings = bookingRepository.findOverlappingBookings(
-                            dto.getRoomId() != null ? dto.getRoomId() : booking.getRoom().getId(),
+                            roomId,
                             dto.getCheckInDate(),
                             dto.getCheckOutDate()
                     ).stream()
                     .filter(b -> !b.getId().equals(id))
                     .toList();
-
             if (!overlappingBookings.isEmpty()) {
-                throw new IllegalArgumentException("The selected room is already booked during the requested period.");
+                throw new BookingConflictException("Room is already booked during the requested period.");
             }
-
             booking.setCheckInDate(dto.getCheckInDate());
             booking.setCheckOutDate(dto.getCheckOutDate());
         }
@@ -109,7 +109,6 @@ public class BookingServiceImpl implements BookingService {
         Booking updatedBooking = bookingRepository.save(booking);
         return BookingMapper.toDto(updatedBooking);
     }
-
 
 
     @Override

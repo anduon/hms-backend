@@ -10,6 +10,7 @@ import lombok.AllArgsConstructor;
 import net.java.hms_backend.dto.InvoiceDto;
 import net.java.hms_backend.dto.InvoiceFilterRequest;
 import net.java.hms_backend.entity.*;
+import net.java.hms_backend.exception.PdfGenerationException;
 import net.java.hms_backend.exception.ResourceNotFoundException;
 import net.java.hms_backend.mapper.InvoiceMapper;
 import net.java.hms_backend.repository.BookingRepository;
@@ -297,7 +298,7 @@ public class InvoiceServiceImpl implements InvoiceService {
             return out.toByteArray();
 
         } catch (Exception e) {
-            throw new RuntimeException("Error while generating PDF: " + e.getMessage(), e);
+            throw new PdfGenerationException("Error while generating PDF", e);
         }
     }
 }
