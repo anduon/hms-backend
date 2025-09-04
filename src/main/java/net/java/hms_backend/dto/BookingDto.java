@@ -20,7 +20,7 @@ public class BookingDto {
 
     private String bookingType;
     private String status;
-    private int numberOfGuests;
+    private Integer numberOfGuests;
     private String notes;
     private String cancelReason;
 }

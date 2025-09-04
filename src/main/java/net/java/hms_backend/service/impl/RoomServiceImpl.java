@@ -5,6 +5,8 @@ import net.java.hms_backend.dto.RoomDto;
 import net.java.hms_backend.dto.RoomFilterRequest;
 import net.java.hms_backend.entity.Promotion;
 import net.java.hms_backend.entity.Room;
+import net.java.hms_backend.entity.RoomPrice;
+import net.java.hms_backend.exception.DuplicateRoomException;
 import net.java.hms_backend.exception.ResourceNotFoundException;
 import net.java.hms_backend.mapper.RoomMapper;
 import net.java.hms_backend.repository.RoomRepository;
@@ -38,10 +40,17 @@ public class RoomServiceImpl implements RoomService {
 
     @Override
     public RoomDto createRoom(RoomDto roomDto) {
+        if (roomRepository.existsByRoomNumber(roomDto.getRoomNumber())) {
+            throw new DuplicateRoomException("Room number already exists: " + roomDto.getRoomNumber());
+        }
         Room room = RoomMapper.mapToRoom(roomDto);
+        if (room.getPrices() != null) {
+            room.getPrices().forEach(price -> price.setRoom(room));
+        }
         Room savedRoom = roomRepository.save(room);
         return RoomMapper.mapToRoomDto(savedRoom);
     }
+
 
     @Override
     public Page<RoomDto> getAllRooms(int page, int size) {
@@ -66,13 +75,21 @@ public class RoomServiceImpl implements RoomService {
     public RoomDto updateRoom(Long id, RoomDto roomDto) {
         Room room = roomRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Room", "id", id));
-
-        room.setRoomNumber(roomDto.getRoomNumber());
-        room.setMaxOccupancy(roomDto.getMaxOccupancy());
-        room.setRoomType(roomDto.getRoomType());
-        room.setStatus(roomDto.getStatus());
-        room.setLocation(roomDto.getLocation());
-
+        if (roomDto.getRoomNumber() != null) {
+            room.setRoomNumber(roomDto.getRoomNumber());
+        }
+        if (roomDto.getMaxOccupancy() != null) {
+            room.setMaxOccupancy(roomDto.getMaxOccupancy());
+        }
+        if (roomDto.getRoomType() != null) {
+            room.setRoomType(roomDto.getRoomType());
+        }
+        if (roomDto.getStatus() != null) {
+            room.setStatus(roomDto.getStatus());
+        }
+        if (roomDto.getLocation() != null) {
+            room.setLocation(roomDto.getLocation());
+        }
         if (roomDto.getPrices() != null) {
             for (var priceDto : roomDto.getPrices()) {
                 var existingPriceOpt = room.getPrices().stream()
@@ -80,9 +97,11 @@ public class RoomServiceImpl implements RoomService {
                         .findFirst();
 
                 if (existingPriceOpt.isPresent()) {
-                    existingPriceOpt.get().setBasePrice(priceDto.getBasePrice());
+                    if (priceDto.getBasePrice() != null) {
+                        existingPriceOpt.get().setBasePrice(priceDto.getBasePrice());
+                    }
                 } else {
-                    var newPrice = new net.java.hms_backend.entity.RoomPrice();
+                    var newPrice = new RoomPrice();
                     newPrice.setPriceType(priceDto.getPriceType());
                     newPrice.setBasePrice(priceDto.getBasePrice());
                     newPrice.setRoom(room);
@@ -94,8 +113,6 @@ public class RoomServiceImpl implements RoomService {
         Room updatedRoom = roomRepository.save(room);
         return RoomMapper.mapToRoomDto(updatedRoom);
     }
-
-
 
     @Override
     public void deleteRoom(Long id) {

@@ -8,6 +8,9 @@ import net.java.hms_backend.dto.UserDto;
 import net.java.hms_backend.dto.UserFilterRequest;
 import net.java.hms_backend.entity.Role;
 import net.java.hms_backend.entity.User;
+import net.java.hms_backend.exception.DuplicateEmailException;
+import net.java.hms_backend.exception.InvalidRoleException;
+import net.java.hms_backend.exception.ResourceNotFoundException;
 import net.java.hms_backend.mapper.UserMapper;
 import net.java.hms_backend.repository.RoleRepository;
 import net.java.hms_backend.repository.UserRepository;
@@ -37,14 +40,18 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserDto createUser(UserDto dto) {
+        if (userRepository.existsByEmail(dto.getEmail())) {
+            throw new DuplicateEmailException("Email already exists: " + dto.getEmail());
+        }
         List<Role> roles = roleRepository.findByNameIn(dto.getRoles());
-        User user = UserMapper.toEntity(dto, roles);
         if (dto.getPassword() == null || dto.getPassword().isBlank()) {
             throw new RuntimeException("Password is required when creating user");
         }
+        User user = UserMapper.toEntity(dto, roles);
         user.setPassword(passwordEncoder.encode(dto.getPassword()));
         return UserMapper.toDto(userRepository.save(user));
     }
+
 
     @Override
     public Page<UserDto> getAllUsers(int page, int size) {
@@ -63,29 +70,36 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserDto updateUser(Long id, UserDto dto) {
         User existing = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", id));
+        if (dto.getFullName() != null) {
+            existing.setFullName(dto.getFullName());
+        }
 
-        existing.setFullName(dto.getFullName());
-        existing.setPhoneNumber(dto.getPhoneNumber());
-        existing.setEmail(dto.getEmail());
+        if (dto.getPhoneNumber() != null) {
+            existing.setPhoneNumber(dto.getPhoneNumber());
+        }
 
+        if (dto.getEmail() != null && !dto.getEmail().equals(existing.getEmail())) {
+            if (userRepository.existsByEmail(dto.getEmail())) {
+                throw new DuplicateEmailException("Email already exists: " + dto.getEmail());
+            }
+            existing.setEmail(dto.getEmail());
+        }
         if (dto.getPassword() != null && !dto.getPassword().isBlank()) {
             existing.setPassword(passwordEncoder.encode(dto.getPassword()));
         }
-
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         boolean isAdminOrManager = auth.getAuthorities().stream()
                 .anyMatch(grantedAuthority ->
                         grantedAuthority.getAuthority().equals("ROLE_ADMIN") ||
                                 grantedAuthority.getAuthority().equals("ROLE_MANAGER"));
-
         if (isAdminOrManager && dto.getRoles() != null) {
             List<Role> roles = roleRepository.findByNameIn(dto.getRoles());
             existing.setRoles(roles);
         }
-
         return UserMapper.toDto(userRepository.save(existing));
     }
+
 
 
 

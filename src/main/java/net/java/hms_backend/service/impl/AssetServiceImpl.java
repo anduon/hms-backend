@@ -57,16 +57,28 @@ public class AssetServiceImpl implements AssetService {
     public AssetDto updateAsset(Long id, AssetDto dto) {
         Asset asset = assetRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Asset", "id", id));
-
-        asset.setName(dto.getName());
-        asset.setCategory(dto.getCategory());
-        asset.setCondition(dto.getCondition());
-        asset.setOriginalCost(dto.getOriginalCost());
-        asset.setPurchaseDate(dto.getPurchaseDate());
-        asset.setNote(dto.getNote());
-
-        return AssetMapper.toDto(assetRepository.save(asset));
+        if (dto.getName() != null) {
+            asset.setName(dto.getName());
+        }
+        if (dto.getCategory() != null) {
+            asset.setCategory(dto.getCategory());
+        }
+        if (dto.getCondition() != null) {
+            asset.setCondition(dto.getCondition());
+        }
+        if (dto.getOriginalCost() != null) {
+            asset.setOriginalCost(dto.getOriginalCost());
+        }
+        if (dto.getPurchaseDate() != null) {
+            asset.setPurchaseDate(dto.getPurchaseDate());
+        }
+        if (dto.getNote() != null) {
+            asset.setNote(dto.getNote());
+        }
+        Asset updatedAsset = assetRepository.save(asset);
+        return AssetMapper.toDto(updatedAsset);
     }
+
 
     @Override
     public void deleteAsset(Long id) {

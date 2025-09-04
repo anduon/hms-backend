@@ -75,38 +75,41 @@ public class BookingServiceImpl implements BookingService {
     public BookingDto updateBooking(Long id, BookingDto dto) {
         Booking booking = bookingRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking", "id", id));
-
-        Room room = roomRepository.findById(dto.getRoomId())
-                .orElseThrow(() -> new ResourceNotFoundException("Room", "id", dto.getRoomId()));
-
-        List<Booking> overlappingBookings = bookingRepository.findOverlappingBookings(
-                        dto.getRoomId(),
-                        dto.getCheckInDate(),
-                        dto.getCheckOutDate()
-                ).stream()
-                .filter(b -> !b.getId().equals(id))
-                .toList();
-
-        if (!overlappingBookings.isEmpty()) {
-            throw new IllegalArgumentException("The selected room is already booked during the requested period.");
+        if (dto.getRoomId() != null && !dto.getRoomId().equals(booking.getRoom().getId())) {
+            Room room = roomRepository.findById(dto.getRoomId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Room", "id", dto.getRoomId()));
+            booking.setRoom(room);
         }
+        if (dto.getCheckInDate() != null && dto.getCheckOutDate() != null) {
+            List<Booking> overlappingBookings = bookingRepository.findOverlappingBookings(
+                            dto.getRoomId() != null ? dto.getRoomId() : booking.getRoom().getId(),
+                            dto.getCheckInDate(),
+                            dto.getCheckOutDate()
+                    ).stream()
+                    .filter(b -> !b.getId().equals(id))
+                    .toList();
 
-        booking.setGuestFullName(dto.getGuestFullName());
-        booking.setGuestIdNumber(dto.getGuestIdNumber());
-        booking.setGuestNationality(dto.getGuestNationality());
-        booking.setRoom(room);
-        booking.setCheckInDate(dto.getCheckInDate());
-        booking.setCheckOutDate(dto.getCheckOutDate());
-        booking.setActualCheckInTime(dto.getActualCheckInTime());
-        booking.setActualCheckOutTime(dto.getActualCheckOutTime());
-        booking.setBookingType(dto.getBookingType());
-        booking.setStatus(dto.getStatus());
-        booking.setNumberOfGuests(dto.getNumberOfGuests());
-        booking.setNotes(dto.getNotes());
-        booking.setCancelReason(dto.getCancelReason());
+            if (!overlappingBookings.isEmpty()) {
+                throw new IllegalArgumentException("The selected room is already booked during the requested period.");
+            }
 
-        return BookingMapper.toDto(bookingRepository.save(booking));
+            booking.setCheckInDate(dto.getCheckInDate());
+            booking.setCheckOutDate(dto.getCheckOutDate());
+        }
+        if (dto.getGuestFullName() != null) booking.setGuestFullName(dto.getGuestFullName());
+        if (dto.getGuestIdNumber() != null) booking.setGuestIdNumber(dto.getGuestIdNumber());
+        if (dto.getGuestNationality() != null) booking.setGuestNationality(dto.getGuestNationality());
+        if (dto.getActualCheckInTime() != null) booking.setActualCheckInTime(dto.getActualCheckInTime());
+        if (dto.getActualCheckOutTime() != null) booking.setActualCheckOutTime(dto.getActualCheckOutTime());
+        if (dto.getBookingType() != null) booking.setBookingType(dto.getBookingType());
+        if (dto.getStatus() != null) booking.setStatus(dto.getStatus());
+        if (dto.getNumberOfGuests() != null) booking.setNumberOfGuests(dto.getNumberOfGuests());
+        if (dto.getNotes() != null) booking.setNotes(dto.getNotes());
+        if (dto.getCancelReason() != null) booking.setCancelReason(dto.getCancelReason());
+        Booking updatedBooking = bookingRepository.save(booking);
+        return BookingMapper.toDto(updatedBooking);
     }
+
 
 
     @Override

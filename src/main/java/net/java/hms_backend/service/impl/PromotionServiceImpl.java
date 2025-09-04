@@ -62,14 +62,22 @@ public class PromotionServiceImpl implements PromotionService {
     public PromotionDto updatePromotion(Long id, PromotionDto dto) {
         Promotion promo = promotionRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Promotion", "id", id));
-        promo.setName(dto.getName());
-        promo.setDiscountPercent(dto.getDiscountPercent());
-        promo.setStartDate(dto.getStartDate());
-        promo.setEndDate(dto.getEndDate());
-
+        if (dto.getName() != null) {
+            promo.setName(dto.getName());
+        }
+        if (dto.getDiscountPercent() != null) {
+            promo.setDiscountPercent(dto.getDiscountPercent());
+        }
+        if (dto.getStartDate() != null) {
+            promo.setStartDate(dto.getStartDate());
+        }
+        if (dto.getEndDate() != null) {
+            promo.setEndDate(dto.getEndDate());
+        }
         Promotion updated = promotionRepository.save(promo);
         return PromotionMapper.toDto(updated);
     }
+
 
     @Override
     public void deletePromotion(Long id) {

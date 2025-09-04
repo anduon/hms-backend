@@ -93,18 +93,37 @@ public class InvoiceServiceImpl implements InvoiceService {
     public InvoiceDto updateInvoice(Long id, InvoiceDto invoiceDto) {
         Invoice invoice = invoiceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Invoice", "id", id));
-
-        invoice.setAmount(invoiceDto.getAmount());
-        invoice.setPaidAmount(invoiceDto.getPaidAmount());
-        invoice.setStatus(invoiceDto.getStatus());
-        invoice.setIssuedDate(invoiceDto.getIssuedDate());
-        invoice.setDueDate(invoiceDto.getDueDate());
-        invoice.setPaymentMethod(invoiceDto.getPaymentMethod());
-        invoice.setNotes(invoiceDto.getNotes());
-
+        if (invoiceDto.getBookingId() != null &&
+                (invoice.getBooking() == null || !invoiceDto.getBookingId().equals(invoice.getBooking().getId()))) {
+            Booking booking = bookingRepository.findById(invoiceDto.getBookingId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Booking", "id", invoiceDto.getBookingId()));
+            invoice.setBooking(booking);
+        }
+        if (invoiceDto.getAmount() != null) {
+            invoice.setAmount(invoiceDto.getAmount());
+        }
+        if (invoiceDto.getPaidAmount() != null) {
+            invoice.setPaidAmount(invoiceDto.getPaidAmount());
+        }
+        if (invoiceDto.getStatus() != null) {
+            invoice.setStatus(invoiceDto.getStatus());
+        }
+        if (invoiceDto.getIssuedDate() != null) {
+            invoice.setIssuedDate(invoiceDto.getIssuedDate());
+        }
+        if (invoiceDto.getDueDate() != null) {
+            invoice.setDueDate(invoiceDto.getDueDate());
+        }
+        if (invoiceDto.getPaymentMethod() != null) {
+            invoice.setPaymentMethod(invoiceDto.getPaymentMethod());
+        }
+        if (invoiceDto.getNotes() != null) {
+            invoice.setNotes(invoiceDto.getNotes());
+        }
         Invoice updatedInvoice = invoiceRepository.save(invoice);
         return InvoiceMapper.mapToInvoiceDto(updatedInvoice);
     }
+
 
     @Override
     public void deleteInvoice(Long id) {
