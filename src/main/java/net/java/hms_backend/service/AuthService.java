@@ -6,6 +6,9 @@ import net.java.hms_backend.dto.LoginRequest;
 import net.java.hms_backend.dto.AuthResponse;
 import net.java.hms_backend.entity.Role;
 import net.java.hms_backend.entity.User;
+import net.java.hms_backend.exception.DuplicateEmailException;
+import net.java.hms_backend.exception.InvalidPasswordException;
+import net.java.hms_backend.exception.ResourceNotFoundException;
 import net.java.hms_backend.repository.RoleRepository;
 import net.java.hms_backend.repository.UserRepository;
 import net.java.hms_backend.config.JwtUtil;
@@ -26,12 +29,11 @@ public class AuthService {
 
     public void register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email exited!");
+            throw new DuplicateEmailException("Email already exists: " + request.getEmail());
         }
-
         List<Role> roles = request.getRoles().stream()
                 .map(roleName -> roleRepository.findByName(roleName)
-                        .orElseThrow(() -> new RuntimeException("Role doesn't exit: " + roleName)))
+                        .orElseThrow(() -> new ResourceNotFoundException("Role not found: ", "role", roleName)))
                 .collect(Collectors.toList());
 
         User user = new User();
@@ -46,15 +48,15 @@ public class AuthService {
 
     public AuthResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("Email doesn't exist!"));
+                .orElseThrow(() -> new ResourceNotFoundException("Email not found: ", "email", request.getEmail()));
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new RuntimeException("Wrong password!");
+            throw new InvalidPasswordException("Incorrect password");
         }
 
         String token = jwtUtil.generateToken(user);
-
         return new AuthResponse(token);
     }
+
 
 }

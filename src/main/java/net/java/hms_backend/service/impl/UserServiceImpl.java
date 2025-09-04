@@ -9,7 +9,7 @@ import net.java.hms_backend.dto.UserFilterRequest;
 import net.java.hms_backend.entity.Role;
 import net.java.hms_backend.entity.User;
 import net.java.hms_backend.exception.DuplicateEmailException;
-import net.java.hms_backend.exception.InvalidRoleException;
+import net.java.hms_backend.exception.MissingPasswordException;
 import net.java.hms_backend.exception.ResourceNotFoundException;
 import net.java.hms_backend.mapper.UserMapper;
 import net.java.hms_backend.repository.RoleRepository;
@@ -45,7 +45,7 @@ public class UserServiceImpl implements UserService {
         }
         List<Role> roles = roleRepository.findByNameIn(dto.getRoles());
         if (dto.getPassword() == null || dto.getPassword().isBlank()) {
-            throw new RuntimeException("Password is required when creating user");
+            throw new MissingPasswordException("Password is required when creating user");
         }
         User user = UserMapper.toEntity(dto, roles);
         user.setPassword(passwordEncoder.encode(dto.getPassword()));
@@ -63,7 +63,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserDto getUserById(Long id) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", id));
         return UserMapper.toDto(user);
     }
 
@@ -106,7 +106,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public void deleteUser(Long id) {
         if (!userRepository.existsById(id)) {
-            throw new RuntimeException("User not found");
+            throw new ResourceNotFoundException("User", "id", id);
         }
         userRepository.deleteById(id);
     }
@@ -166,9 +166,8 @@ public class UserServiceImpl implements UserService {
     public UserDto getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
-        Optional<User> userOpt = userRepository.findByEmail(email);
-
-        return userOpt.map(UserMapper::toDto)
-                .orElseThrow(() -> new RuntimeException("Current user not found"));
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "email", email));
+        return UserMapper.toDto(user);
     }
 }

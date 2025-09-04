@@ -3,6 +3,7 @@ package net.java.hms_backend.config;
 import lombok.RequiredArgsConstructor;
 import net.java.hms_backend.entity.Role;
 import net.java.hms_backend.entity.User;
+import net.java.hms_backend.exception.ResourceNotFoundException;
 import net.java.hms_backend.repository.RoleRepository;
 import net.java.hms_backend.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
@@ -38,7 +39,7 @@ public class DataInitializer implements CommandLineRunner {
 
         if (userRepository.count() == 0) {
             Role adminRole = roleRepository.findByName("ADMIN")
-                    .orElseThrow(() -> new RuntimeException("ADMIN role not found!"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Role", "name", "ADMIN"));
 
             User adminUser = new User();
             adminUser.setFullName("Default Admin");
