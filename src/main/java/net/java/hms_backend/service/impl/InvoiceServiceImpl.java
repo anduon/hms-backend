@@ -94,9 +94,6 @@ public class InvoiceServiceImpl implements InvoiceService {
         Invoice invoice = invoiceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Invoice", "id", id));
 
-        Booking booking = bookingRepository.findById(invoiceDto.getBookingId())
-                .orElseThrow(() -> new ResourceNotFoundException("Booking", "id", invoiceDto.getBookingId()));
-
         invoice.setAmount(invoiceDto.getAmount());
         invoice.setPaidAmount(invoiceDto.getPaidAmount());
         invoice.setStatus(invoiceDto.getStatus());
@@ -104,7 +101,6 @@ public class InvoiceServiceImpl implements InvoiceService {
         invoice.setDueDate(invoiceDto.getDueDate());
         invoice.setPaymentMethod(invoiceDto.getPaymentMethod());
         invoice.setNotes(invoiceDto.getNotes());
-        invoice.setBooking(booking);
 
         Invoice updatedInvoice = invoiceRepository.save(invoice);
         return InvoiceMapper.mapToInvoiceDto(updatedInvoice);
