@@ -6,8 +6,8 @@ import net.java.hms_backend.dto.RoomFilterRequest;
 import net.java.hms_backend.entity.Promotion;
 import net.java.hms_backend.entity.Room;
 import net.java.hms_backend.entity.RoomPrice;
-import net.java.hms_backend.exception.DuplicateRoomException;
 import net.java.hms_backend.exception.ResourceNotFoundException;
+import net.java.hms_backend.exception.RoomException;
 import net.java.hms_backend.mapper.RoomMapper;
 import net.java.hms_backend.repository.RoomRepository;
 import net.java.hms_backend.service.PromotionService;
@@ -40,8 +40,12 @@ public class RoomServiceImpl implements RoomService {
 
     @Override
     public RoomDto createRoom(RoomDto roomDto) {
+        if (roomDto.getRoomNumber() == null) {
+            throw new RoomException.NullRoomNumberException("Room number must not be null");
+        }
+
         if (roomRepository.existsByRoomNumber(roomDto.getRoomNumber())) {
-            throw new DuplicateRoomException("Room number already exists: " + roomDto.getRoomNumber());
+            throw new RoomException.DuplicateRoomException("Room number already exists: " + roomDto.getRoomNumber());
         }
         Room room = RoomMapper.mapToRoom(roomDto);
         if (room.getPrices() != null) {

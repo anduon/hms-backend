@@ -1,5 +1,6 @@
 package net.java.hms_backend.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import net.java.hms_backend.dto.AssetDto;
 import net.java.hms_backend.dto.AssetFilterRequest;
@@ -18,7 +19,7 @@ public class AssetController {
     private final AssetService assetService;
 
     @PostMapping
-    public ResponseEntity<AssetDto> createAsset(@RequestBody AssetDto dto) {
+    public ResponseEntity<AssetDto> createAsset(@Valid @RequestBody AssetDto dto) {
         return ResponseEntity.ok(assetService.createAsset(dto));
     }
 
@@ -27,6 +28,12 @@ public class AssetController {
                                                        @RequestParam(defaultValue = "10") int size) {
         return ResponseEntity.ok(assetService.getAllAssets(page, size));
     }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<AssetDto> getAssetById(@PathVariable Long id) {
+        return ResponseEntity.ok(assetService.getAssetById(id));
+    }
+
 
     @GetMapping("/room/{roomId}")
     public ResponseEntity<List<AssetDto>> getAssetsByRoom(@PathVariable Long roomId) {

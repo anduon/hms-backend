@@ -5,6 +5,7 @@ import net.java.hms_backend.dto.AssetDto;
 import net.java.hms_backend.dto.AssetFilterRequest;
 import net.java.hms_backend.entity.Asset;
 import net.java.hms_backend.entity.Room;
+import net.java.hms_backend.exception.AssetException;
 import net.java.hms_backend.exception.ResourceNotFoundException;
 import net.java.hms_backend.mapper.AssetMapper;
 import net.java.hms_backend.repository.AssetRepository;
@@ -30,6 +31,10 @@ public class AssetServiceImpl implements AssetService {
     @Override
     public AssetDto createAsset(AssetDto dto) {
         Integer roomNumber = dto.getRoomNumber();
+        if (roomNumber == null) {
+            throw new AssetException.NullRoomNumberException("Room number must not be null");
+        }
+
         Room room = roomRepository.findByRoomNumber(roomNumber)
                 .orElseThrow(() -> new ResourceNotFoundException("Room", "roomNumber", roomNumber));
 
@@ -136,5 +141,13 @@ public class AssetServiceImpl implements AssetService {
 
         return assetsPage.map(AssetMapper::toDto);
     }
+
+    @Override
+    public AssetDto getAssetById(Long id) {
+        Asset asset = assetRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Asset", "id", id));
+        return AssetMapper.toDto(asset);
+    }
+
 
 }

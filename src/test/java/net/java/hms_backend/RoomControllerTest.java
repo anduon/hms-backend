@@ -42,6 +42,7 @@ class RoomControllerTest {
     private RoomRepository roomRepository;
 
     private String jwtToken;
+    private String accountantToken;
     private RoomDto testRoom;
 
     @Autowired
@@ -68,6 +69,15 @@ class RoomControllerTest {
 
         jwtToken = jwtUtil.generateToken(user);
 
+        Role accountantRole = roleRepository.save(new Role("ACCOUNTANT"));
+        User accountant = new User();
+        accountant.setEmail("accountant@example.com");
+        accountant.setPassword(passwordEncoder.encode("123456"));
+        accountant.setRoles(List.of(accountantRole));
+        userRepository.save(accountant);
+
+        accountantToken = jwtUtil.generateToken(accountant);
+
         testRoom = new RoomDto();
         testRoom.setRoomNumber(101);
         testRoom.setMaxOccupancy(2);
@@ -87,8 +97,17 @@ class RoomControllerTest {
     }
 
     @Test
+    void testCreateRoomWithAccountant_shouldReturn403() throws Exception {
+        mockMvc.perform(post("/api/rooms")
+                        .header("Authorization", "Bearer " + accountantToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(testRoom)))
+                .andExpect(status().isForbidden());
+    }
+
+
+    @Test
     void testGetRoomById() throws Exception {
-        // Tạo room trước để có ID
         String response = mockMvc.perform(post("/api/rooms")
                         .header("Authorization", "Bearer " + jwtToken)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -101,6 +120,21 @@ class RoomControllerTest {
                         .header("Authorization", "Bearer " + jwtToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.roomType").value("Deluxe"));
+    }
+
+    @Test
+    void testGetRoomByIdWithAccountant_shouldReturn403() throws Exception {
+        String response = mockMvc.perform(post("/api/rooms")
+                        .header("Authorization", "Bearer " + jwtToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(testRoom)))
+                .andReturn().getResponse().getContentAsString();
+
+        long id = objectMapper.readTree(response).get("id").asLong();
+
+        mockMvc.perform(get("/api/rooms/" + id)
+                        .header("Authorization", "Bearer " + accountantToken))
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -124,6 +158,25 @@ class RoomControllerTest {
     }
 
     @Test
+    void testUpdateRoomWithWrongRole_shouldReturn403() throws Exception {
+        String response = mockMvc.perform(post("/api/rooms")
+                        .header("Authorization", "Bearer " + jwtToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(testRoom)))
+                .andReturn().getResponse().getContentAsString();
+
+        long id = objectMapper.readTree(response).get("id").asLong();
+
+        testRoom.setRoomType("Suite");
+
+        mockMvc.perform(put("/api/rooms/" + id)
+                        .header("Authorization", "Bearer " + accountantToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(testRoom)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void testDeleteRoom() throws Exception {
         String response = mockMvc.perform(post("/api/rooms")
                         .header("Authorization", "Bearer " + jwtToken)
@@ -140,6 +193,22 @@ class RoomControllerTest {
     }
 
     @Test
+    void testDeleteRoomWithAccountant_shouldReturn403() throws Exception {
+        String response = mockMvc.perform(post("/api/rooms")
+                        .header("Authorization", "Bearer " + jwtToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(testRoom)))
+                .andReturn().getResponse().getContentAsString();
+
+        long id = objectMapper.readTree(response).get("id").asLong();
+
+        mockMvc.perform(delete("/api/rooms/" + id)
+                        .header("Authorization", "Bearer " + accountantToken))
+                .andExpect(status().isForbidden());
+    }
+
+
+    @Test
     void testGetAllRooms() throws Exception {
         mockMvc.perform(post("/api/rooms")
                         .header("Authorization", "Bearer " + jwtToken)
@@ -154,21 +223,15 @@ class RoomControllerTest {
     }
 
     @Test
-    void testCreateRoomWithWrongRole_shouldReturn403() throws Exception {
-        Role accountantRole = roleRepository.save(new Role("ACCOUNTANT"));
-
-        User user = new User();
-        user.setEmail("user@example.com");
-        user.setPassword(passwordEncoder.encode("123456"));
-        user.setRoles(List.of(accountantRole));
-        userRepository.save(user);
-
-        String token = jwtUtil.generateToken(user);
-
+    void testGetAllRoomsWithAccountant_shouldReturn403() throws Exception {
         mockMvc.perform(post("/api/rooms")
-                        .header("Authorization", "Bearer " + token)
+                        .header("Authorization", "Bearer " + jwtToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(testRoom)))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(get("/api/rooms")
+                        .header("Authorization", "Bearer " + accountantToken))
                 .andExpect(status().isForbidden());
     }
 
@@ -177,6 +240,59 @@ class RoomControllerTest {
         mockMvc.perform(get("/api/rooms/99999")
                         .header("Authorization", "Bearer " + jwtToken))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void testCreateRoomWithDuplicateRoomNumber_shouldReturn409() throws Exception {
+        mockMvc.perform(post("/api/rooms")
+                        .header("Authorization", "Bearer " + jwtToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(testRoom)))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post("/api/rooms")
+                        .header("Authorization", "Bearer " + jwtToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(testRoom)))
+                .andExpect(status().isConflict())
+                .andExpect(content().string(containsString("Room number already exists")));
+    }
+
+    @Test
+    void testCreateRoomWithoutRoomNumber_shouldReturn400() throws Exception {
+        testRoom.setRoomNumber(null);
+
+        mockMvc.perform(post("/api/rooms")
+                        .header("Authorization", "Bearer " + jwtToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(testRoom)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testUpdateNonExistingRoom_shouldReturn404() throws Exception {
+        testRoom.setRoomType("Executive");
+
+        mockMvc.perform(put("/api/rooms/99999")
+                        .header("Authorization", "Bearer " + jwtToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(testRoom)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void testDeleteNonExistingRoom_shouldReturn404() throws Exception {
+        mockMvc.perform(delete("/api/rooms/99999")
+                        .header("Authorization", "Bearer " + jwtToken))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void testCreateRoomWithoutToken_shouldReturn401() throws Exception {
+        mockMvc.perform(post("/api/rooms")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(testRoom)))
+                .andExpect(status().isUnauthorized());
     }
 
 }

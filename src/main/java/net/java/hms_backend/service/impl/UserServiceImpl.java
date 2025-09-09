@@ -8,9 +8,8 @@ import net.java.hms_backend.dto.UserDto;
 import net.java.hms_backend.dto.UserFilterRequest;
 import net.java.hms_backend.entity.Role;
 import net.java.hms_backend.entity.User;
-import net.java.hms_backend.exception.DuplicateEmailException;
-import net.java.hms_backend.exception.MissingPasswordException;
 import net.java.hms_backend.exception.ResourceNotFoundException;
+import net.java.hms_backend.exception.UserException;
 import net.java.hms_backend.mapper.UserMapper;
 import net.java.hms_backend.repository.RoleRepository;
 import net.java.hms_backend.repository.UserRepository;
@@ -25,7 +24,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -41,11 +39,11 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserDto createUser(UserDto dto) {
         if (userRepository.existsByEmail(dto.getEmail())) {
-            throw new DuplicateEmailException("Email already exists: " + dto.getEmail());
+            throw new UserException.DuplicateEmailException("Email already exists: " + dto.getEmail());
         }
         List<Role> roles = roleRepository.findByNameIn(dto.getRoles());
         if (dto.getPassword() == null || dto.getPassword().isBlank()) {
-            throw new MissingPasswordException("Password is required when creating user");
+            throw new UserException.MissingPasswordException("Password is required when creating user");
         }
         User user = UserMapper.toEntity(dto, roles);
         user.setPassword(passwordEncoder.encode(dto.getPassword()));
@@ -81,7 +79,7 @@ public class UserServiceImpl implements UserService {
 
         if (dto.getEmail() != null && !dto.getEmail().equals(existing.getEmail())) {
             if (userRepository.existsByEmail(dto.getEmail())) {
-                throw new DuplicateEmailException("Email already exists: " + dto.getEmail());
+                throw new UserException.DuplicateEmailException("Email already exists: " + dto.getEmail());
             }
             existing.setEmail(dto.getEmail());
         }

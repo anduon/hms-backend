@@ -19,4 +19,6 @@ public interface AssetService {
     void deleteAsset(Long id);
 
     Page<AssetDto> searchAssets(AssetFilterRequest filter, int page, int size);
+
+    AssetDto getAssetById(Long id);
 }

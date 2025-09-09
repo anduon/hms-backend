@@ -6,47 +6,55 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.util.Map;
+
 @Hidden
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<String> handleResourceNotFound(ResourceNotFoundException ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+    public ResponseEntity<Map<String, String>> handleResourceNotFound(ResourceNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of("message", ex.getMessage()));
     }
 
-    @ExceptionHandler(DuplicateRoomException.class)
-    public ResponseEntity<String> handleDuplicateRoom(DuplicateRoomException ex) {
+    @ExceptionHandler(RoomException.DuplicateRoomException.class)
+    public ResponseEntity<String> handleDuplicateRoom(RoomException.DuplicateRoomException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
     }
 
-    @ExceptionHandler(DuplicateEmailException.class)
-    public ResponseEntity<String> handleDuplicateEmail(DuplicateEmailException ex) {
+    @ExceptionHandler(UserException.DuplicateEmailException.class)
+    public ResponseEntity<String> handleDuplicateEmail(UserException.DuplicateEmailException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
     }
 
-    @ExceptionHandler(InvalidRoleException.class)
-    public ResponseEntity<String> handleInvalidRole(InvalidRoleException ex) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
-    }
-
-    @ExceptionHandler(BookingConflictException.class)
-    public ResponseEntity<String> handleBookingConflict(BookingConflictException ex) {
+    @ExceptionHandler(BookingException.BookingConflictException.class)
+    public ResponseEntity<String> handleBookingConflict(BookingException.BookingConflictException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
     }
 
-    @ExceptionHandler(PdfGenerationException.class)
-    public ResponseEntity<String> handlePdfGeneration(PdfGenerationException ex) {
+    @ExceptionHandler(InvoiceException.PdfGenerationException.class)
+    public ResponseEntity<String> handlePdfGeneration(InvoiceException.PdfGenerationException ex) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
     }
 
-    @ExceptionHandler(MissingPasswordException.class)
-    public ResponseEntity<String> handleMissingPassword(MissingPasswordException ex) {
+    @ExceptionHandler(UserException.MissingPasswordException.class)
+    public ResponseEntity<String> handleMissingPassword(UserException.MissingPasswordException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
     }
 
-    @ExceptionHandler(InvalidPasswordException.class)
-    public ResponseEntity<String> handleInvalidPassword(InvalidPasswordException ex) {
+    @ExceptionHandler(UserException.InvalidPasswordException.class)
+    public ResponseEntity<String> handleInvalidPassword(UserException.InvalidPasswordException ex) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ex.getMessage());
+    }
+
+    @ExceptionHandler(RoomException.NullRoomNumberException.class)
+    public ResponseEntity<String> handleNullRoomNumber(RoomException.NullRoomNumberException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+    }
+
+    @ExceptionHandler(AssetException.NullRoomNumberException.class)
+    public ResponseEntity<String> handleNullRoomNumberAsset(AssetException.NullRoomNumberException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
     }
 }

@@ -12,7 +12,7 @@ import net.java.hms_backend.dto.BookingDto;
 import net.java.hms_backend.dto.BookingFilterRequest;
 import net.java.hms_backend.entity.Booking;
 import net.java.hms_backend.entity.Room;
-import net.java.hms_backend.exception.BookingConflictException;
+import net.java.hms_backend.exception.BookingException;
 import net.java.hms_backend.exception.ResourceNotFoundException;
 import net.java.hms_backend.mapper.BookingMapper;
 import net.java.hms_backend.repository.BookingRepository;
@@ -50,7 +50,7 @@ public class BookingServiceImpl implements BookingService {
         );
 
         if (!overlappingBookings.isEmpty()) {
-            throw new BookingConflictException("Room is already booked during the requested period.");
+            throw new BookingException.BookingConflictException("Room is already booked during the requested period.");
         }
 
         Booking booking = BookingMapper.toEntity(dto, room);
@@ -91,7 +91,7 @@ public class BookingServiceImpl implements BookingService {
                     .filter(b -> !b.getId().equals(id))
                     .toList();
             if (!overlappingBookings.isEmpty()) {
-                throw new BookingConflictException("Room is already booked during the requested period.");
+                throw new BookingException.BookingConflictException("Room is already booked during the requested period.");
             }
             booking.setCheckInDate(dto.getCheckInDate());
             booking.setCheckOutDate(dto.getCheckOutDate());

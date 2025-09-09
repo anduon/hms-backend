@@ -10,7 +10,7 @@ import lombok.AllArgsConstructor;
 import net.java.hms_backend.dto.InvoiceDto;
 import net.java.hms_backend.dto.InvoiceFilterRequest;
 import net.java.hms_backend.entity.*;
-import net.java.hms_backend.exception.PdfGenerationException;
+import net.java.hms_backend.exception.InvoiceException;
 import net.java.hms_backend.exception.ResourceNotFoundException;
 import net.java.hms_backend.mapper.InvoiceMapper;
 import net.java.hms_backend.repository.BookingRepository;
@@ -288,7 +288,6 @@ public class InvoiceServiceImpl implements InvoiceService {
             document.add(summaryTable);
             document.add(new Paragraph(" "));
 
-            // ====== PAYMENT METHOD & NOTES ======
             document.add(new Paragraph("Phương thức thanh toán: " + (invoice.getPaymentMethod() != null ? invoice.getPaymentMethod() : "Chưa xác định")));
             document.add(new Paragraph("Ghi chú: " + (invoice.getNotes() != null ? invoice.getNotes() : "")));
             document.add(new Paragraph(" "));
@@ -298,7 +297,7 @@ public class InvoiceServiceImpl implements InvoiceService {
             return out.toByteArray();
 
         } catch (Exception e) {
-            throw new PdfGenerationException("Error while generating PDF", e);
+            throw new InvoiceException.PdfGenerationException("Error while generating PDF", e);
         }
     }
 }
