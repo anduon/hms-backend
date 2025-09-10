@@ -7,6 +7,7 @@ import net.java.hms_backend.service.InvoiceService;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import java.io.IOException;
 import org.springframework.http.HttpHeaders;
@@ -24,6 +25,7 @@ public class InvoiceController {
         return new ResponseEntity<>(savedInvoice, HttpStatus.CREATED);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','RECEPTIONIST')")
     @GetMapping
     public ResponseEntity<Page<InvoiceDto>> getAllInvoices(@RequestParam(defaultValue = "0") int page,
                                                            @RequestParam(defaultValue = "10") int size) {
@@ -40,12 +42,14 @@ public class InvoiceController {
         return ResponseEntity.ok(invoiceService.updateInvoice(id, invoiceDto));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','RECEPTIONIST')")
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteInvoice(@PathVariable Long id) {
         invoiceService.deleteInvoice(id);
         return ResponseEntity.ok("Invoice deleted successfully.");
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','RECEPTIONIST')")
     @PostMapping("/filter")
     public ResponseEntity<Page<InvoiceDto>> filterInvoices(
             @RequestBody InvoiceFilterRequest filter,

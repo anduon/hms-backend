@@ -33,9 +33,9 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/rooms/**").hasAnyRole("ADMIN","MANAGER","RECEPTIONIST")
-                        .requestMatchers("/api/assets/**").hasAnyRole("ADMIN","MANAGER")
+                        .requestMatchers("/api/assets/**").hasAnyRole("ADMIN","MANAGER","RECEPTIONIST")
                         .requestMatchers("/api/bookings/**").hasAnyRole("ADMIN","RECEPTIONIST")
-                        .requestMatchers("/api/invoices/**").hasAnyRole("ADMIN","ACCOUNTANT")
+                        .requestMatchers("/api/invoices/**").hasAnyRole("ADMIN","ACCOUNTANT","RECEPTIONIST")
                         .requestMatchers("/api/promotions/**").hasAnyRole("ADMIN","MANAGER")
                         .requestMatchers("/api/users/**").hasAnyRole("ADMIN", "MANAGER", "RECEPTIONIST", "ACCOUNTANT")
                         .requestMatchers("/api/dashboard/**").hasAnyRole("ADMIN","MANAGER")

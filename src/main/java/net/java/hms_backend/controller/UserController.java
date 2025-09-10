@@ -42,17 +42,22 @@ public class UserController {
         return ResponseEntity.ok("User deleted successfully.");
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','RECEPTIONIST','ACCOUNTANT')")
     @PutMapping("/{id}")
     public ResponseEntity<UserDto> updateUser(@PathVariable Long id, @RequestBody UserDto dto) {
         return ResponseEntity.ok(userService.updateUser(id, dto));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     @PostMapping("/search")
     public ResponseEntity<Page<UserDto>> searchUsers(@RequestBody UserFilterRequest filter,
                                                      @RequestParam(defaultValue = "0") int page,
                                                      @RequestParam(defaultValue = "10") int size) {
         return ResponseEntity.ok(userService.searchUsers(filter, page, size));
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<UserDto> getCurrentUser() {
+        return ResponseEntity.ok(userService.getCurrentUser());
     }
 
 }

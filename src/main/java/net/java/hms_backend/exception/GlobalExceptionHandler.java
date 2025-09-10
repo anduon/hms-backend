@@ -3,9 +3,11 @@ package net.java.hms_backend.exception;
 import io.swagger.v3.oas.annotations.Hidden;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @Hidden
@@ -44,8 +46,9 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(UserException.InvalidPasswordException.class)
-    public ResponseEntity<String> handleInvalidPassword(UserException.InvalidPasswordException ex) {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ex.getMessage());
+    public ResponseEntity<Map<String, String>> handleInvalidPassword(UserException.InvalidPasswordException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("message", ex.getMessage()));
     }
 
     @ExceptionHandler(RoomException.NullRoomNumberException.class)
@@ -56,5 +59,20 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AssetException.NullRoomNumberException.class)
     public ResponseEntity<String> handleNullRoomNumberAsset(AssetException.NullRoomNumberException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+    }
+
+    @ExceptionHandler({
+            AuthException.MissingEmailException.class,
+            AuthException.MissingPasswordException.class,
+            AuthException.MissingEmailAndPasswordException.class
+    })
+    public ResponseEntity<Map<String, String>> handleMissingAuthFields(AuthException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("message", ex.getMessage()));
+    }
+
+    @ExceptionHandler(UserException.AccessDeniedException.class)
+    public ResponseEntity<String> handleAccessDenied(UserException.AccessDeniedException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ex.getMessage());
     }
 }

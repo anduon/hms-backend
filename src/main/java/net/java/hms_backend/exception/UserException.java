@@ -22,4 +22,10 @@ public class UserException extends RuntimeException {
             super(message);
         }
     }
+
+    public static class AccessDeniedException extends UserException {
+        public AccessDeniedException(String message) {
+            super(message);
+        }
+    }
 }

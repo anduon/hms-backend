@@ -17,6 +17,8 @@ import net.java.hms_backend.service.UserService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -69,6 +71,25 @@ public class UserServiceImpl implements UserService {
     public UserDto updateUser(Long id, UserDto dto) {
         User existing = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", id));
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = userRepository.findByEmail(auth.getName())
+                .orElseThrow(() -> new ResourceNotFoundException("User", "email", auth.getName()));
+
+        boolean isAdminOrManager = auth.getAuthorities().stream()
+                .anyMatch(grantedAuthority ->
+                        grantedAuthority.getAuthority().equals("ROLE_ADMIN") ||
+                                grantedAuthority.getAuthority().equals("ROLE_MANAGER"));
+
+        if (!isAdminOrManager && !currentUser.getId().equals(id)) {
+            throw new UserException.AccessDeniedException("You are not allowed to update this user");
+        }
+
+        if (!isAdminOrManager && dto.getRoles() != null) {
+            throw new UserException.AccessDeniedException("You are not allowed to update roles");
+        }
+
+
         if (dto.getFullName() != null) {
             existing.setFullName(dto.getFullName());
         }
@@ -83,23 +104,18 @@ public class UserServiceImpl implements UserService {
             }
             existing.setEmail(dto.getEmail());
         }
+
         if (dto.getPassword() != null && !dto.getPassword().isBlank()) {
             existing.setPassword(passwordEncoder.encode(dto.getPassword()));
         }
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        boolean isAdminOrManager = auth.getAuthorities().stream()
-                .anyMatch(grantedAuthority ->
-                        grantedAuthority.getAuthority().equals("ROLE_ADMIN") ||
-                                grantedAuthority.getAuthority().equals("ROLE_MANAGER"));
+
         if (isAdminOrManager && dto.getRoles() != null) {
             List<Role> roles = roleRepository.findByNameIn(dto.getRoles());
             existing.setRoles(roles);
         }
+
         return UserMapper.toDto(userRepository.save(existing));
     }
-
-
-
 
     @Override
     public void deleteUser(Long id) {

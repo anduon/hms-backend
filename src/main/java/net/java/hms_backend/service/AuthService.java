@@ -1,11 +1,10 @@
 package net.java.hms_backend.service;
 
 import lombok.RequiredArgsConstructor;
-import net.java.hms_backend.dto.RegisterRequest;
 import net.java.hms_backend.dto.LoginRequest;
 import net.java.hms_backend.dto.AuthResponse;
-import net.java.hms_backend.entity.Role;
 import net.java.hms_backend.entity.User;
+import net.java.hms_backend.exception.AuthException;
 import net.java.hms_backend.exception.ResourceNotFoundException;
 import net.java.hms_backend.exception.UserException;
 import net.java.hms_backend.repository.RoleRepository;
@@ -13,9 +12,6 @@ import net.java.hms_backend.repository.UserRepository;
 import net.java.hms_backend.config.JwtUtil;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -26,36 +22,32 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
 
-    public void register(RegisterRequest request) {
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new UserException.DuplicateEmailException("Email already exists: " + request.getEmail());
-        }
-        List<Role> roles = request.getRoles().stream()
-                .map(roleName -> roleRepository.findByName(roleName)
-                        .orElseThrow(() -> new ResourceNotFoundException("Role not found: ", "role", roleName)))
-                .collect(Collectors.toList());
-
-        User user = new User();
-        user.setFullName(request.getFullName());
-        user.setPhoneNumber(request.getPhoneNumber());
-        user.setEmail(request.getEmail());
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setRoles(roles);
-
-        userRepository.save(user);
-    }
-
     public AuthResponse login(LoginRequest request) {
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new ResourceNotFoundException("Email not found: ", "email", request.getEmail()));
+        String email = request.getEmail();
+        String password = request.getPassword();
 
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+        if (email == null || email.isBlank()) {
+            if (password == null || password.isBlank()) {
+                throw new AuthException.MissingEmailAndPasswordException();
+            }
+            throw new AuthException.MissingEmailException();
+        }
+
+        if (password == null || password.isBlank()) {
+            throw new AuthException.MissingPasswordException();
+        }
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Email not found", "email", email));
+
+        if (!passwordEncoder.matches(password, user.getPassword())) {
             throw new UserException.InvalidPasswordException("Incorrect password");
         }
 
         String token = jwtUtil.generateToken(user);
         return new AuthResponse(token);
     }
+
 
 
 }
