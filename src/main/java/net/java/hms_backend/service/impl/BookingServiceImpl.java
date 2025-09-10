@@ -40,6 +40,38 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     public BookingDto createBooking(BookingDto dto) {
+        if (dto.getGuestFullName() == null || dto.getGuestFullName().isBlank()) {
+            throw new BookingException.MissingGuestNameException();
+        }
+
+        if (dto.getGuestIdNumber() == null || dto.getGuestIdNumber().isBlank()) {
+            throw new BookingException.MissingIdNumberException();
+        }
+
+        if (dto.getRoomNumber() == null) {
+            throw new BookingException.MissingRoomNumberException();
+        }
+
+        if (dto.getCheckInDate() == null) {
+            throw new BookingException.MissingCheckInDateException();
+        }
+
+        if (dto.getCheckOutDate() == null) {
+            throw new BookingException.MissingCheckOutDateException();
+        }
+
+        if (dto.getBookingType() == null || dto.getBookingType().isBlank()) {
+            throw new BookingException.MissingBookingTypeException();
+        }
+
+        if (dto.getStatus() == null || dto.getStatus().isBlank()) {
+            throw new BookingException.MissingStatusException();
+        }
+
+        if (dto.getNumberOfGuests() == null) {
+            throw new BookingException.MissingNumberOfGuestsException();
+        }
+
         Room room = roomRepository.findByRoomNumber(dto.getRoomNumber())
                 .orElseThrow(() -> new ResourceNotFoundException("Room", "roomNumber", dto.getRoomNumber()));
 
@@ -53,9 +85,15 @@ public class BookingServiceImpl implements BookingService {
             throw new BookingException.BookingConflictException("Room is already booked during the requested period.");
         }
 
+        if (dto.getCheckOutDate().isBefore(dto.getCheckInDate())) {
+            throw new BookingException.InvalidDateRangeException();
+        }
+
         Booking booking = BookingMapper.toEntity(dto, room);
-        return BookingMapper.toDto(bookingRepository.save(booking));
+        Booking saved = bookingRepository.save(booking);
+        return BookingMapper.toDto(saved);
     }
+
 
 
     @Override

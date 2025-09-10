@@ -1,7 +1,6 @@
 package net.java.hms_backend;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import net.java.hms_backend.config.JwtUtil;
 import net.java.hms_backend.dto.LoginRequest;
 import net.java.hms_backend.entity.Role;
 import net.java.hms_backend.entity.User;

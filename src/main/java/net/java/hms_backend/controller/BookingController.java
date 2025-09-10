@@ -1,5 +1,6 @@
 package net.java.hms_backend.controller;
 
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import net.java.hms_backend.dto.BookingDto;
 import net.java.hms_backend.dto.BookingFilterRequest;
@@ -17,7 +18,7 @@ public class BookingController {
     private final BookingService bookingService;
 
     @PostMapping
-    public ResponseEntity<BookingDto> createBooking(@RequestBody BookingDto dto) {
+    public ResponseEntity<BookingDto> createBooking(@Valid @RequestBody BookingDto dto) {
         return ResponseEntity.ok(bookingService.createBooking(dto));
     }
 

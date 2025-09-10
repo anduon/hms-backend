@@ -75,4 +75,26 @@ public class GlobalExceptionHandler {
     public ResponseEntity<String> handleAccessDenied(UserException.AccessDeniedException ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ex.getMessage());
     }
+
+    @ExceptionHandler({
+            BookingException.MissingGuestNameException.class,
+            BookingException.MissingIdNumberException.class,
+            BookingException.MissingRoomNumberException.class,
+            BookingException.MissingCheckInDateException.class,
+            BookingException.MissingCheckOutDateException.class,
+            BookingException.MissingBookingTypeException.class,
+            BookingException.MissingStatusException.class,
+            BookingException.MissingNumberOfGuestsException.class
+    })
+    public ResponseEntity<Map<String, String>> handleMissingBookingFields(BookingException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("message", ex.getMessage()));
+    }
+
+    @ExceptionHandler(BookingException.InvalidDateRangeException.class)
+    public ResponseEntity<Map<String, String>> handleInvalidDateRange(BookingException.InvalidDateRangeException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("message", ex.getMessage()));
+    }
+
 }
