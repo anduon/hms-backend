@@ -89,6 +89,17 @@ public class UserServiceImpl implements UserService {
             throw new UserException.AccessDeniedException("You are not allowed to update roles");
         }
 
+        if (dto.getPassword() != null) {
+            if (dto.getPassword().isBlank()) {
+                throw new UserException.MissingPasswordException("Password must not be blank");
+            }
+            existing.setPassword(passwordEncoder.encode(dto.getPassword()));
+        }
+
+        if (isAdminOrManager && dto.getRoles() != null) {
+            List<Role> roles = roleRepository.findByNameIn(dto.getRoles());
+            existing.setRoles(roles);
+        }
 
         if (dto.getFullName() != null) {
             existing.setFullName(dto.getFullName());
@@ -98,24 +109,9 @@ public class UserServiceImpl implements UserService {
             existing.setPhoneNumber(dto.getPhoneNumber());
         }
 
-        if (dto.getEmail() != null && !dto.getEmail().equals(existing.getEmail())) {
-            if (userRepository.existsByEmail(dto.getEmail())) {
-                throw new UserException.DuplicateEmailException("Email already exists: " + dto.getEmail());
-            }
-            existing.setEmail(dto.getEmail());
-        }
-
-        if (dto.getPassword() != null && !dto.getPassword().isBlank()) {
-            existing.setPassword(passwordEncoder.encode(dto.getPassword()));
-        }
-
-        if (isAdminOrManager && dto.getRoles() != null) {
-            List<Role> roles = roleRepository.findByNameIn(dto.getRoles());
-            existing.setRoles(roles);
-        }
-
         return UserMapper.toDto(userRepository.save(existing));
     }
+
 
     @Override
     public void deleteUser(Long id) {

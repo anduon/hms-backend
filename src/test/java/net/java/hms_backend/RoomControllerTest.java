@@ -17,6 +17,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 
 import java.util.List;
 
@@ -254,6 +255,48 @@ class RoomControllerTest {
                         .header("Authorization", "Bearer " + jwtToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(testRoom)))
+                .andExpect(status().isConflict())
+                .andExpect(content().string(containsString("Room number already exists")));
+    }
+
+    @Test
+    void testUpdateRoomWithDuplicateRoomNumber_shouldReturn409() throws Exception {
+        RoomDto roomA = new RoomDto();
+        roomA.setRoomNumber(101);
+        roomA.setRoomType("DELUXE");
+        roomA.setMaxOccupancy(2);
+        roomA.setStatus("AVAILABLE");
+
+        MvcResult resultA = mockMvc.perform(post("/api/rooms")
+                        .header("Authorization", "Bearer " + jwtToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(roomA)))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        RoomDto createdRoomA = objectMapper.readValue(resultA.getResponse().getContentAsString(), RoomDto.class);
+
+        RoomDto roomB = new RoomDto();
+        roomB.setRoomNumber(102);
+        roomB.setRoomType("STANDARD");
+        roomB.setMaxOccupancy(1);
+        roomB.setStatus("AVAILABLE");
+
+        MvcResult resultB = mockMvc.perform(post("/api/rooms")
+                        .header("Authorization", "Bearer " + jwtToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(roomB)))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        RoomDto createdRoomB = objectMapper.readValue(resultB.getResponse().getContentAsString(), RoomDto.class);
+
+        createdRoomB.setRoomNumber(101);
+
+        mockMvc.perform(put("/api/rooms/{id}", createdRoomB.getId())
+                        .header("Authorization", "Bearer " + jwtToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(createdRoomB)))
                 .andExpect(status().isConflict())
                 .andExpect(content().string(containsString("Room number already exists")));
     }

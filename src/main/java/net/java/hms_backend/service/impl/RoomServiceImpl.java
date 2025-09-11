@@ -79,44 +79,36 @@ public class RoomServiceImpl implements RoomService {
     public RoomDto updateRoom(Long id, RoomDto roomDto) {
         Room room = roomRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Room", "id", id));
+
         if (roomDto.getRoomNumber() != null) {
-            room.setRoomNumber(roomDto.getRoomNumber());
+            if (roomDto.getRoomNumber().equals(room.getRoomNumber())) {
+            } else if (roomRepository.existsByRoomNumber(roomDto.getRoomNumber())) {
+                throw new RoomException.DuplicateRoomException("Room number already exists: " + roomDto.getRoomNumber());
+            } else {
+                room.setRoomNumber(roomDto.getRoomNumber());
+            }
         }
+
         if (roomDto.getMaxOccupancy() != null) {
             room.setMaxOccupancy(roomDto.getMaxOccupancy());
         }
+
         if (roomDto.getRoomType() != null) {
             room.setRoomType(roomDto.getRoomType());
         }
+
         if (roomDto.getStatus() != null) {
             room.setStatus(roomDto.getStatus());
         }
+
         if (roomDto.getLocation() != null) {
             room.setLocation(roomDto.getLocation());
-        }
-        if (roomDto.getPrices() != null) {
-            for (var priceDto : roomDto.getPrices()) {
-                var existingPriceOpt = room.getPrices().stream()
-                        .filter(p -> p.getPriceType() == priceDto.getPriceType())
-                        .findFirst();
-
-                if (existingPriceOpt.isPresent()) {
-                    if (priceDto.getBasePrice() != null) {
-                        existingPriceOpt.get().setBasePrice(priceDto.getBasePrice());
-                    }
-                } else {
-                    var newPrice = new RoomPrice();
-                    newPrice.setPriceType(priceDto.getPriceType());
-                    newPrice.setBasePrice(priceDto.getBasePrice());
-                    newPrice.setRoom(room);
-                    room.getPrices().add(newPrice);
-                }
-            }
         }
 
         Room updatedRoom = roomRepository.save(room);
         return RoomMapper.mapToRoomDto(updatedRoom);
     }
+
 
     @Override
     public void deleteRoom(Long id) {

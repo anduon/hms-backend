@@ -62,6 +62,11 @@ public class AssetServiceImpl implements AssetService {
     public AssetDto updateAsset(Long id, AssetDto dto) {
         Asset asset = assetRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Asset", "id", id));
+        if (dto.getRoomNumber() != null) {
+            Room room = roomRepository.findByRoomNumber(dto.getRoomNumber())
+                    .orElseThrow(() -> new ResourceNotFoundException("Room", "roomNumber", dto.getRoomNumber()));
+            asset.setRoom(room);
+        }
         if (dto.getName() != null) {
             asset.setName(dto.getName());
         }

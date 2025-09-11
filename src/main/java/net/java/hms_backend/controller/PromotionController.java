@@ -1,5 +1,6 @@
 package net.java.hms_backend.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import net.java.hms_backend.dto.PromotionDto;
 import net.java.hms_backend.dto.PromotionFilterRequest;
@@ -21,7 +22,7 @@ public class PromotionController {
     private final PromotionService promotionService;
 
     @PostMapping
-    public ResponseEntity<PromotionDto> createPromotion(@RequestBody PromotionDto dto) {
+    public ResponseEntity<PromotionDto> createPromotion(@Valid @RequestBody PromotionDto dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(promotionService.createPromotion(dto));
     }
 

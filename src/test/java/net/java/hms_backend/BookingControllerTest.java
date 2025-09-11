@@ -21,6 +21,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -263,6 +264,29 @@ class BookingControllerTest {
     }
 
     @Test
+    void testUpdateBookingWithInvalidDateRange_shouldReturn400() throws Exception {
+        Booking booking = new Booking();
+        booking.setGuestFullName("Nguyễn Văn A");
+        booking.setGuestIdNumber("123456789");
+        booking.setGuestNationality("Việt Nam");
+        booking.setRoom(testRoom);
+        booking.setCheckInDate(LocalDateTime.now().plusDays(1));
+        booking.setCheckOutDate(LocalDateTime.now().plusDays(3));
+        booking.setBookingType("ONLINE");
+        booking.setStatus("CONFIRMED");
+        booking.setNumberOfGuests(2);
+        bookingRepository.save(booking);        BookingDto updatedDto = createSampleBookingDto();
+        updatedDto.setCheckInDate(LocalDateTime.now().plusDays(5));
+
+        mockMvc.perform(put("/api/bookings/" + booking.getId())
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updatedDto)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Check-out date must be after check-in date."));
+    }
+
+    @Test
     void testMissingGuestFullName_shouldReturn400() throws Exception {
         BookingDto dto = createSampleBookingDto();
         dto.setGuestFullName(null);
@@ -379,4 +403,92 @@ class BookingControllerTest {
                 .andExpect(jsonPath("$.message").value("Room not found with roomNumber : '999'"));
     }
 
+    @Test
+    void testUpdateBookingWithNonexistentRoom_shouldReturn404() throws Exception {
+        Booking booking = new Booking();
+        booking.setGuestFullName("Nguyễn Văn A");
+        booking.setGuestIdNumber("123456789");
+        booking.setGuestNationality("Việt Nam");
+        booking.setRoom(testRoom);
+        booking.setCheckInDate(LocalDateTime.now().plusDays(1));
+        booking.setCheckOutDate(LocalDateTime.now().plusDays(3));
+        booking.setBookingType("ONLINE");
+        booking.setStatus("CONFIRMED");
+        booking.setNumberOfGuests(2);
+        bookingRepository.save(booking);        BookingDto updatedDto = createSampleBookingDto();
+        updatedDto.setRoomNumber(999);
+
+        mockMvc.perform(put("/api/bookings/" + booking.getId())
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updatedDto)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Room not found with roomNumber : '999'"));
+    }
+
+    @Test
+    void testCreateBookingWithOverlappingDates_shouldReturnConflict() throws Exception {
+        Booking booking = new Booking();
+        booking.setGuestFullName("Nguyễn Văn A");
+        booking.setGuestIdNumber("123456789");
+        booking.setGuestNationality("Việt Nam");
+        booking.setRoom(testRoom);
+        booking.setCheckInDate(LocalDateTime.now().plusDays(1));
+        booking.setCheckOutDate(LocalDateTime.now().plusDays(3));
+        booking.setBookingType("ONLINE");
+        booking.setStatus("CONFIRMED");
+        booking.setNumberOfGuests(2);
+        bookingRepository.save(booking);
+
+        BookingDto overlappingBooking = createSampleBookingDto();
+        overlappingBooking.setRoomNumber(101);
+        overlappingBooking.setCheckInDate(LocalDateTime.now().plusDays(2));
+        overlappingBooking.setCheckOutDate(LocalDateTime.now().plusDays(4));
+
+        mockMvc.perform(post("/api/bookings")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(overlappingBooking)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Room is already booked during the requested period."));
+    }
+
+    @Test
+    void testUpdateBookingWithOverlappingDates_shouldReturnConflict() throws Exception {
+        Booking booking = new Booking();
+        booking.setGuestFullName("Nguyễn Văn A");
+        booking.setGuestIdNumber("123456789");
+        booking.setGuestNationality("Việt Nam");
+        booking.setRoom(testRoom);
+        booking.setCheckInDate(LocalDateTime.now().plusDays(1));
+        booking.setCheckOutDate(LocalDateTime.now().plusDays(3));
+        booking.setBookingType("ONLINE");
+        booking.setStatus("CONFIRMED");
+        booking.setNumberOfGuests(2);
+        bookingRepository.save(booking);
+
+        Booking newBooking = new Booking();
+        newBooking.setGuestFullName("Nguyễn Văn A");
+        newBooking.setGuestIdNumber("123456789");
+        newBooking.setGuestNationality("Việt Nam");
+        newBooking.setRoom(testRoom);
+        newBooking.setCheckInDate(LocalDateTime.now().plusDays(4));
+        newBooking.setCheckOutDate(LocalDateTime.now().plusDays(6));
+        newBooking.setBookingType("ONLINE");
+        newBooking.setStatus("CONFIRMED");
+        newBooking.setNumberOfGuests(2);
+        bookingRepository.save(newBooking);
+
+        BookingDto overlappingBooking = createSampleBookingDto();
+        overlappingBooking.setRoomNumber(101);
+        overlappingBooking.setCheckInDate(LocalDateTime.now().plusDays(2));
+        overlappingBooking.setCheckOutDate(LocalDateTime.now().plusDays(4));
+
+        mockMvc.perform(put("/api/bookings/" + newBooking.getId())
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(overlappingBooking)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Room is already booked during the requested period."));
+    }
 }

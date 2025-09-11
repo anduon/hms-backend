@@ -250,4 +250,22 @@ class AssetControllerTest {
                 .andExpect(jsonPath("$.message", containsString("Room")));
     }
 
+    @Test
+    void testUpdateAssetWithInvalidRoomNumber_shouldReturn404() throws Exception {
+        String response = mockMvc.perform(post("/api/assets")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(testAsset)))
+                .andReturn().getResponse().getContentAsString();
+
+        Long id = objectMapper.readTree(response).get("id").asLong();
+        testAsset.setRoomNumber(999);
+
+        mockMvc.perform(put("/api/assets/" + id)
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(testAsset)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message", containsString("Room")));
+    }
 }

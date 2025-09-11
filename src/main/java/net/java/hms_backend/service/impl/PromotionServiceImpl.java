@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import net.java.hms_backend.dto.PromotionDto;
 import net.java.hms_backend.dto.PromotionFilterRequest;
 import net.java.hms_backend.entity.Promotion;
+import net.java.hms_backend.exception.PromotionException;
 import net.java.hms_backend.exception.ResourceNotFoundException;
 import net.java.hms_backend.mapper.PromotionMapper;
 import net.java.hms_backend.repository.PromotionRepository;
@@ -38,10 +39,35 @@ public class PromotionServiceImpl implements PromotionService {
 
     @Override
     public PromotionDto createPromotion(PromotionDto dto) {
+        if (dto.getName() == null || dto.getName().isBlank()) {
+            throw new PromotionException.MissingNameException();
+        }
+
+        if (dto.getDiscountPercent() == null) {
+            throw new PromotionException.MissingDiscountPercentException();
+        }
+
+        if (dto.getDiscountPercent() < 0 || dto.getDiscountPercent() > 100) {
+            throw new PromotionException.InvalidDiscountRangeException();
+        }
+
+        if (dto.getStartDate() == null) {
+            throw new PromotionException.MissingStartDateException();
+        }
+
+        if (dto.getEndDate() == null) {
+            throw new PromotionException.MissingEndDateException();
+        }
+
+        if (!dto.getEndDate().isAfter(dto.getStartDate())) {
+            throw new PromotionException.InvalidDateRangeException();
+        }
+
         Promotion entity = PromotionMapper.toEntity(dto);
         Promotion saved = promotionRepository.save(entity);
         return PromotionMapper.toDto(saved);
     }
+
 
     @Override
     public Page<PromotionDto> getAllPromotions(int page, int size) {
@@ -62,21 +88,36 @@ public class PromotionServiceImpl implements PromotionService {
     public PromotionDto updatePromotion(Long id, PromotionDto dto) {
         Promotion promo = promotionRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Promotion", "id", id));
-        if (dto.getName() != null) {
+
+        if (dto.getName() != null && !dto.getName().isBlank()) {
             promo.setName(dto.getName());
         }
+
         if (dto.getDiscountPercent() != null) {
+            if (dto.getDiscountPercent() < 0 || dto.getDiscountPercent() > 100) {
+                throw new PromotionException.InvalidDiscountRangeException();
+            }
             promo.setDiscountPercent(dto.getDiscountPercent());
         }
+
         if (dto.getStartDate() != null) {
             promo.setStartDate(dto.getStartDate());
         }
+
         if (dto.getEndDate() != null) {
             promo.setEndDate(dto.getEndDate());
         }
+
+        if (promo.getStartDate() != null && promo.getEndDate() != null) {
+            if (!promo.getEndDate().isAfter(promo.getStartDate())) {
+                throw new PromotionException.InvalidDateRangeException();
+            }
+        }
+
         Promotion updated = promotionRepository.save(promo);
         return PromotionMapper.toDto(updated);
     }
+
 
 
     @Override
