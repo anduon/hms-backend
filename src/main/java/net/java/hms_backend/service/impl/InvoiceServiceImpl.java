@@ -94,15 +94,32 @@ public class InvoiceServiceImpl implements InvoiceService {
     public InvoiceDto updateInvoice(Long id, InvoiceDto invoiceDto) {
         Invoice invoice = invoiceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Invoice", "id", id));
+
         if (invoiceDto.getBookingId() != null &&
                 (invoice.getBooking() == null || !invoiceDto.getBookingId().equals(invoice.getBooking().getId()))) {
+
             Booking booking = bookingRepository.findById(invoiceDto.getBookingId())
                     .orElseThrow(() -> new ResourceNotFoundException("Booking", "id", invoiceDto.getBookingId()));
             invoice.setBooking(booking);
+
+            Room room = booking.getRoom();
+            PriceType bookingPriceType = PriceType.valueOf(booking.getBookingType());
+
+            RoomPrice roomPrice = room.getPrices().stream()
+                    .filter(p -> p.getPriceType() == bookingPriceType)
+                    .findFirst()
+                    .orElseThrow(() -> new ResourceNotFoundException("RoomPrice", "priceType", bookingPriceType));
+
+            LocalDateTime start = booking.getActualCheckInTime() != null ? booking.getActualCheckInTime() : booking.getCheckInDate();
+            LocalDateTime end = booking.getActualCheckOutTime() != null ? booking.getActualCheckOutTime() : booking.getCheckOutDate();
+
+            long days = java.time.Duration.between(start, end).toDays();
+            if (days <= 0) days = 1;
+
+            BigDecimal amount = BigDecimal.valueOf(roomPrice.getBasePrice() * days);
+            invoice.setAmount(amount);
         }
-        if (invoiceDto.getAmount() != null) {
-            invoice.setAmount(invoiceDto.getAmount());
-        }
+
         if (invoiceDto.getPaidAmount() != null) {
             invoice.setPaidAmount(invoiceDto.getPaidAmount());
         }
@@ -121,9 +138,11 @@ public class InvoiceServiceImpl implements InvoiceService {
         if (invoiceDto.getNotes() != null) {
             invoice.setNotes(invoiceDto.getNotes());
         }
+
         Invoice updatedInvoice = invoiceRepository.save(invoice);
         return InvoiceMapper.mapToInvoiceDto(updatedInvoice);
     }
+
 
 
     @Override
