@@ -20,10 +20,25 @@ public class GlobalExceptionHandler {
                 .body(Map.of("message", ex.getMessage()));
     }
 
-    @ExceptionHandler(InvoiceException.PdfGenerationException.class)
-    public ResponseEntity<String> handlePdfGeneration(InvoiceException.PdfGenerationException ex) {
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
+    @ExceptionHandler({
+            InvoiceException.PdfGenerationException.class,
+            InvoiceException.DuplicateBookingException.class
+    })
+    public ResponseEntity<Map<String, String>> handleInvoiceExceptions(InvoiceException ex) {
+        HttpStatus status;
+
+        if (ex instanceof InvoiceException.PdfGenerationException) {
+            status = HttpStatus.INTERNAL_SERVER_ERROR;
+        } else if (ex instanceof InvoiceException.DuplicateBookingException) {
+            status = HttpStatus.CONFLICT;
+        } else {
+            status = HttpStatus.BAD_REQUEST;
+        }
+
+        return ResponseEntity.status(status)
+                .body(Map.of("message", ex.getMessage()));
     }
+
 
     @ExceptionHandler({
             AuthException.MissingEmailException.class,

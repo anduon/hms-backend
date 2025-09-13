@@ -23,4 +23,6 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
     BigDecimal sumOutstandingAmountByStatus(@Param("status") String status);
 
     List<Invoice> findByIssuedDateAfter(LocalDateTime date);
+
+    boolean existsByBookingId(Long bookingId);
 }

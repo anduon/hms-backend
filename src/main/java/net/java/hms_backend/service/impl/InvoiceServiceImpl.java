@@ -49,6 +49,12 @@ public class InvoiceServiceImpl implements InvoiceService {
         Booking booking = bookingRepository.findById(invoiceDto.getBookingId())
                 .orElseThrow(() -> new ResourceNotFoundException("Booking", "id", invoiceDto.getBookingId()));
 
+        boolean invoiceExists = invoiceRepository.existsByBookingId(booking.getId());
+        if (invoiceExists) {
+            throw new InvoiceException.DuplicateBookingException(
+                    "Invoice already exists for booking ID: " + booking.getId(), null);
+        }
+
         Room room = booking.getRoom();
         PriceType bookingPriceType = PriceType.valueOf(booking.getBookingType());
 

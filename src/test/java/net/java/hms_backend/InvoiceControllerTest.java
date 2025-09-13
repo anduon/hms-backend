@@ -269,4 +269,20 @@ class InvoiceControllerTest {
                 });
     }
 
+    @Test
+    void testCreateInvoiceWithDuplicateBookingId_shouldFail() throws Exception {
+        mockMvc.perform(post("/api/invoices")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(testInvoice)))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post("/api/invoices")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(testInvoice)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Invoice already exists for booking ID: " + testInvoice.getBookingId()));
+    }
+
 }

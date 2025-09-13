@@ -10,4 +10,10 @@ public class InvoiceException extends RuntimeException {
             super(message, cause);
         }
     }
+
+    public static class DuplicateBookingException extends InvoiceException {
+        public DuplicateBookingException(String message, Throwable cause) {
+            super(message, cause);
+        }
+    }
 }
