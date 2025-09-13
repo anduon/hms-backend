@@ -1,5 +1,6 @@
 package net.java.hms_backend.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import net.java.hms_backend.dto.RoomDto;
 import net.java.hms_backend.dto.RoomFilterRequest;
@@ -21,7 +22,7 @@ public class RoomController {
     private final RoomService roomService;
 
     @PostMapping
-    public ResponseEntity<RoomDto> createRoom(@RequestBody @Validated RoomDto roomDto) {
+    public ResponseEntity<RoomDto> createRoom(@Valid @RequestBody RoomDto roomDto) {
         RoomDto savedRoom = roomService.createRoom(roomDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(savedRoom);
     }
@@ -42,7 +43,7 @@ public class RoomController {
 
     @PutMapping("/{id}")
     public ResponseEntity<RoomDto> updateRoom(@PathVariable("id") Long id,
-                                              @RequestBody @Validated RoomDto roomDto) {
+                                              @Valid @RequestBody RoomDto roomDto) {
         RoomDto updatedRoom = roomService.updateRoom(id, roomDto);
         return ResponseEntity.ok(updatedRoom);
     }

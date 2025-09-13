@@ -25,7 +25,8 @@ cd hms-backend
 ```env
 DB_URL=jdbc:postgresql://localhost:5432/ten_database
 DB_USERNAME=postgres
-DB_PASSWORD=matkhau
+DB_PASSWORD=
+JWT_SECRET=    (ít nất 32 ký tự)
 ```
 > **Lưu ý:** Thêm `.env` vào `.gitignore` để không đẩy file này lên GitHub.
 

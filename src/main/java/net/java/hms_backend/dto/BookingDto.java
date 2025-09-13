@@ -1,5 +1,7 @@
 package net.java.hms_backend.dto;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import java.time.LocalDateTime;
 
@@ -8,19 +10,33 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class BookingDto {
     private Long id;
+
+    @NotBlank(message = "Guest name is required")
     private String guestFullName;
+
+    @NotBlank(message = "ID number is required")
     private String guestIdNumber;
     private String guestNationality;
-    private Long roomId;
 
+    @NotNull(message = "Room number is required")
+    private Integer roomNumber;
+
+    @NotNull(message = "Check-in date is required")
     private LocalDateTime checkInDate;
+
+    @NotNull(message = "Check-out date is required")
     private LocalDateTime checkOutDate;
     private LocalDateTime actualCheckInTime;
     private LocalDateTime actualCheckOutTime;
 
+    @NotBlank(message = "Booking type is required")
     private String bookingType;
+
+    @NotBlank(message = "Status is required")
     private String status;
-    private int numberOfGuests;
+
+    @NotNull(message = "Number of guests is required")
+    private Integer numberOfGuests;
     private String notes;
     private String cancelReason;
 }

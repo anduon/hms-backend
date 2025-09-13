@@ -10,6 +10,7 @@ import lombok.AllArgsConstructor;
 import net.java.hms_backend.dto.InvoiceDto;
 import net.java.hms_backend.dto.InvoiceFilterRequest;
 import net.java.hms_backend.entity.*;
+import net.java.hms_backend.exception.InvoiceException;
 import net.java.hms_backend.exception.ResourceNotFoundException;
 import net.java.hms_backend.mapper.InvoiceMapper;
 import net.java.hms_backend.repository.BookingRepository;
@@ -93,22 +94,37 @@ public class InvoiceServiceImpl implements InvoiceService {
     public InvoiceDto updateInvoice(Long id, InvoiceDto invoiceDto) {
         Invoice invoice = invoiceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Invoice", "id", id));
-
-        Booking booking = bookingRepository.findById(invoiceDto.getBookingId())
-                .orElseThrow(() -> new ResourceNotFoundException("Booking", "id", invoiceDto.getBookingId()));
-
-        invoice.setAmount(invoiceDto.getAmount());
-        invoice.setPaidAmount(invoiceDto.getPaidAmount());
-        invoice.setStatus(invoiceDto.getStatus());
-        invoice.setIssuedDate(invoiceDto.getIssuedDate());
-        invoice.setDueDate(invoiceDto.getDueDate());
-        invoice.setPaymentMethod(invoiceDto.getPaymentMethod());
-        invoice.setNotes(invoiceDto.getNotes());
-        invoice.setBooking(booking);
-
+        if (invoiceDto.getBookingId() != null &&
+                (invoice.getBooking() == null || !invoiceDto.getBookingId().equals(invoice.getBooking().getId()))) {
+            Booking booking = bookingRepository.findById(invoiceDto.getBookingId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Booking", "id", invoiceDto.getBookingId()));
+            invoice.setBooking(booking);
+        }
+        if (invoiceDto.getAmount() != null) {
+            invoice.setAmount(invoiceDto.getAmount());
+        }
+        if (invoiceDto.getPaidAmount() != null) {
+            invoice.setPaidAmount(invoiceDto.getPaidAmount());
+        }
+        if (invoiceDto.getStatus() != null) {
+            invoice.setStatus(invoiceDto.getStatus());
+        }
+        if (invoiceDto.getIssuedDate() != null) {
+            invoice.setIssuedDate(invoiceDto.getIssuedDate());
+        }
+        if (invoiceDto.getDueDate() != null) {
+            invoice.setDueDate(invoiceDto.getDueDate());
+        }
+        if (invoiceDto.getPaymentMethod() != null) {
+            invoice.setPaymentMethod(invoiceDto.getPaymentMethod());
+        }
+        if (invoiceDto.getNotes() != null) {
+            invoice.setNotes(invoiceDto.getNotes());
+        }
         Invoice updatedInvoice = invoiceRepository.save(invoice);
         return InvoiceMapper.mapToInvoiceDto(updatedInvoice);
     }
+
 
     @Override
     public void deleteInvoice(Long id) {
@@ -272,7 +288,6 @@ public class InvoiceServiceImpl implements InvoiceService {
             document.add(summaryTable);
             document.add(new Paragraph(" "));
 
-            // ====== PAYMENT METHOD & NOTES ======
             document.add(new Paragraph("Phương thức thanh toán: " + (invoice.getPaymentMethod() != null ? invoice.getPaymentMethod() : "Chưa xác định")));
             document.add(new Paragraph("Ghi chú: " + (invoice.getNotes() != null ? invoice.getNotes() : "")));
             document.add(new Paragraph(" "));
@@ -282,7 +297,7 @@ public class InvoiceServiceImpl implements InvoiceService {
             return out.toByteArray();
 
         } catch (Exception e) {
-            throw new RuntimeException("Error while generating PDF: " + e.getMessage(), e);
+            throw new InvoiceException.PdfGenerationException("Error while generating PDF", e);
         }
     }
 }

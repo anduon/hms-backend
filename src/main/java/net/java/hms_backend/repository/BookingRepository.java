@@ -19,4 +19,21 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             @Param("newCheckIn") LocalDateTime newCheckIn,
             @Param("newCheckOut") LocalDateTime newCheckOut
     );
+
+    Long countByStatus(String status);
+
+    List<Booking> findByStatusAndCheckOutDateAfter(String status, LocalDateTime date);
+
+    List<Booking> findByActualCheckInTimeIsNotNull();
+
+    List<Booking> findByActualCheckOutTimeBetween(LocalDateTime startOfDay, LocalDateTime endOfDay);
+
+    List<Booking> findByCheckInDateBetween(LocalDateTime startOfDay, LocalDateTime endOfDay);
+
+    List<Booking> findByCheckOutDateBetween(LocalDateTime startOfDay, LocalDateTime endOfDay);
+
+    @Query("SELECT SUM(b.numberOfGuests) FROM Booking b WHERE b.checkInDate BETWEEN :startDate AND :endDate")
+    Long countTotalGuestsBetween(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
+
+    List<Booking> findByCheckInDateAfter(LocalDateTime date);
 }

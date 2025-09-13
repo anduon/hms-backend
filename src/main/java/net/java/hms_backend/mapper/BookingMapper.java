@@ -12,7 +12,7 @@ public class BookingMapper {
                 booking.getGuestFullName(),
                 booking.getGuestIdNumber(),
                 booking.getGuestNationality(),
-                booking.getRoom() != null ? booking.getRoom().getId() : null,
+                booking.getRoom() != null ? booking.getRoom().getRoomNumber() : null,
                 booking.getCheckInDate(),
                 booking.getCheckOutDate(),
                 booking.getActualCheckInTime(),

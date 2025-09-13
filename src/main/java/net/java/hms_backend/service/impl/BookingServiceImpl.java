@@ -12,6 +12,7 @@ import net.java.hms_backend.dto.BookingDto;
 import net.java.hms_backend.dto.BookingFilterRequest;
 import net.java.hms_backend.entity.Booking;
 import net.java.hms_backend.entity.Room;
+import net.java.hms_backend.exception.BookingException;
 import net.java.hms_backend.exception.ResourceNotFoundException;
 import net.java.hms_backend.mapper.BookingMapper;
 import net.java.hms_backend.repository.BookingRepository;
@@ -39,22 +40,60 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     public BookingDto createBooking(BookingDto dto) {
-        Room room = roomRepository.findById(dto.getRoomId())
-                .orElseThrow(() -> new ResourceNotFoundException("Room", "id", dto.getRoomId()));
+        if (dto.getGuestFullName() == null || dto.getGuestFullName().isBlank()) {
+            throw new BookingException.MissingGuestNameException();
+        }
+
+        if (dto.getGuestIdNumber() == null || dto.getGuestIdNumber().isBlank()) {
+            throw new BookingException.MissingIdNumberException();
+        }
+
+        if (dto.getRoomNumber() == null) {
+            throw new BookingException.MissingRoomNumberException();
+        }
+
+        if (dto.getCheckInDate() == null) {
+            throw new BookingException.MissingCheckInDateException();
+        }
+
+        if (dto.getCheckOutDate() == null) {
+            throw new BookingException.MissingCheckOutDateException();
+        }
+
+        if (dto.getBookingType() == null || dto.getBookingType().isBlank()) {
+            throw new BookingException.MissingBookingTypeException();
+        }
+
+        if (dto.getStatus() == null || dto.getStatus().isBlank()) {
+            throw new BookingException.MissingStatusException();
+        }
+
+        if (dto.getNumberOfGuests() == null) {
+            throw new BookingException.MissingNumberOfGuestsException();
+        }
+
+        Room room = roomRepository.findByRoomNumber(dto.getRoomNumber())
+                .orElseThrow(() -> new ResourceNotFoundException("Room", "roomNumber", dto.getRoomNumber()));
 
         List<Booking> overlappingBookings = bookingRepository.findOverlappingBookings(
-                dto.getRoomId(),
+                room.getId(),
                 dto.getCheckInDate(),
                 dto.getCheckOutDate()
         );
 
         if (!overlappingBookings.isEmpty()) {
-            throw new IllegalArgumentException("The selected room is already booked during the requested period.");
+            throw new BookingException.BookingConflictException("Room is already booked during the requested period.");
+        }
+
+        if (dto.getCheckOutDate().isBefore(dto.getCheckInDate())) {
+            throw new BookingException.InvalidDateRangeException();
         }
 
         Booking booking = BookingMapper.toEntity(dto, room);
-        return BookingMapper.toDto(bookingRepository.save(booking));
+        Booking saved = bookingRepository.save(booking);
+        return BookingMapper.toDto(saved);
     }
+
 
 
     @Override
@@ -76,37 +115,62 @@ public class BookingServiceImpl implements BookingService {
         Booking booking = bookingRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking", "id", id));
 
-        Room room = roomRepository.findById(dto.getRoomId())
-                .orElseThrow(() -> new ResourceNotFoundException("Room", "id", dto.getRoomId()));
-
-        List<Booking> overlappingBookings = bookingRepository.findOverlappingBookings(
-                        dto.getRoomId(),
-                        dto.getCheckInDate(),
-                        dto.getCheckOutDate()
-                ).stream()
-                .filter(b -> !b.getId().equals(id))
-                .toList();
-
-        if (!overlappingBookings.isEmpty()) {
-            throw new IllegalArgumentException("The selected room is already booked during the requested period.");
+        if (dto.getRoomNumber() != null && !dto.getRoomNumber().equals(booking.getRoom().getRoomNumber())) {
+            Room room = roomRepository.findByRoomNumber(dto.getRoomNumber())
+                    .orElseThrow(() -> new ResourceNotFoundException("Room", "roomNumber", dto.getRoomNumber()));
+            booking.setRoom(room);
         }
 
-        booking.setGuestFullName(dto.getGuestFullName());
-        booking.setGuestIdNumber(dto.getGuestIdNumber());
-        booking.setGuestNationality(dto.getGuestNationality());
-        booking.setRoom(room);
-        booking.setCheckInDate(dto.getCheckInDate());
-        booking.setCheckOutDate(dto.getCheckOutDate());
-        booking.setActualCheckInTime(dto.getActualCheckInTime());
-        booking.setActualCheckOutTime(dto.getActualCheckOutTime());
-        booking.setBookingType(dto.getBookingType());
-        booking.setStatus(dto.getStatus());
-        booking.setNumberOfGuests(dto.getNumberOfGuests());
-        booking.setNotes(dto.getNotes());
-        booking.setCancelReason(dto.getCancelReason());
+        if (dto.getCheckInDate() != null && dto.getCheckOutDate() != null) {
+            if (dto.getCheckOutDate().isBefore(dto.getCheckInDate())) {
+                throw new BookingException.InvalidDateRangeException();
+            }
 
-        return BookingMapper.toDto(bookingRepository.save(booking));
+            Long roomId = booking.getRoom().getId();
+            List<Booking> overlappingBookings = bookingRepository.findOverlappingBookings(
+                            roomId,
+                            dto.getCheckInDate(),
+                            dto.getCheckOutDate()
+                    ).stream()
+                    .filter(b -> !b.getId().equals(id))
+                    .toList();
+
+            if (!overlappingBookings.isEmpty()) {
+                throw new BookingException.BookingConflictException("Room is already booked during the requested period.");
+            }
+
+            booking.setCheckInDate(dto.getCheckInDate());
+            booking.setCheckOutDate(dto.getCheckOutDate());
+        }
+
+        if (dto.getGuestFullName() != null && dto.getGuestFullName().isBlank()) {
+            throw new BookingException.MissingGuestNameException();
+        }
+        if (dto.getGuestIdNumber() != null && dto.getGuestIdNumber().isBlank()) {
+            throw new BookingException.MissingIdNumberException();
+        }
+        if (dto.getBookingType() != null && dto.getBookingType().isBlank()) {
+            throw new BookingException.MissingBookingTypeException();
+        }
+        if (dto.getStatus() != null && dto.getStatus().isBlank()) {
+            throw new BookingException.MissingStatusException();
+        }
+
+        if (dto.getGuestFullName() != null) booking.setGuestFullName(dto.getGuestFullName());
+        if (dto.getGuestIdNumber() != null) booking.setGuestIdNumber(dto.getGuestIdNumber());
+        if (dto.getGuestNationality() != null) booking.setGuestNationality(dto.getGuestNationality());
+        if (dto.getActualCheckInTime() != null) booking.setActualCheckInTime(dto.getActualCheckInTime());
+        if (dto.getActualCheckOutTime() != null) booking.setActualCheckOutTime(dto.getActualCheckOutTime());
+        if (dto.getBookingType() != null) booking.setBookingType(dto.getBookingType());
+        if (dto.getStatus() != null) booking.setStatus(dto.getStatus());
+        if (dto.getNumberOfGuests() != null) booking.setNumberOfGuests(dto.getNumberOfGuests());
+        if (dto.getNotes() != null) booking.setNotes(dto.getNotes());
+        if (dto.getCancelReason() != null) booking.setCancelReason(dto.getCancelReason());
+
+        Booking updatedBooking = bookingRepository.save(booking);
+        return BookingMapper.toDto(updatedBooking);
     }
+
 
 
     @Override

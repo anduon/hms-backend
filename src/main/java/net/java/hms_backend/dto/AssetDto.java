@@ -1,5 +1,6 @@
 package net.java.hms_backend.dto;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -17,5 +18,6 @@ public class AssetDto {
     private Double originalCost;
     private LocalDate purchaseDate;
     private String note;
+    @NotNull(message = "Room number is required")
     private Integer roomNumber;
 }

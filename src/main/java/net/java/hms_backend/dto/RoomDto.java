@@ -1,9 +1,7 @@
 package net.java.hms_backend.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import jakarta.validation.constraints.NotNull;
+import lombok.*;
 
 import java.util.List;
 
@@ -13,6 +11,7 @@ import java.util.List;
 @AllArgsConstructor
 public class RoomDto {
     private Long id;
+    @NotNull(message = "Room number is required")
     private Integer roomNumber;
     private Integer maxOccupancy;
     private String roomType;

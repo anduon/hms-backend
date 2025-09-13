@@ -20,6 +20,7 @@ public class Booking {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+
     private String guestFullName;
     private String guestIdNumber;
     private String guestNationality;
