@@ -491,4 +491,18 @@ class BookingControllerTest {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value("Room is already booked during the requested period."));
     }
+
+    @Test
+    void testCreateBookingWithInvalidBookingType_shouldReturn400() throws Exception {
+        BookingDto invalidBooking = createSampleBookingDto();
+        invalidBooking.setBookingType("WEEKLY");
+
+        mockMvc.perform(post("/api/bookings")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalidBooking)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Invalid booking type"));
+    }
+
 }

@@ -83,7 +83,8 @@ public class GlobalExceptionHandler {
             BookingException.MissingBookingTypeException.class,
             BookingException.MissingStatusException.class,
             BookingException.MissingNumberOfGuestsException.class,
-            BookingException.InvalidDateRangeException.class
+            BookingException.InvalidDateRangeException.class,
+            BookingException.InvalidBookingTypeException.class
     })
     public ResponseEntity<Map<String, String>> handleBookingExceptions(BookingException ex) {
         HttpStatus status = ex instanceof BookingException.BookingConflictException

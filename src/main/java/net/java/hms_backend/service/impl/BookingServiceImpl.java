@@ -11,6 +11,7 @@ import lombok.AllArgsConstructor;
 import net.java.hms_backend.dto.BookingDto;
 import net.java.hms_backend.dto.BookingFilterRequest;
 import net.java.hms_backend.entity.Booking;
+import net.java.hms_backend.entity.PriceType;
 import net.java.hms_backend.entity.Room;
 import net.java.hms_backend.exception.BookingException;
 import net.java.hms_backend.exception.ResourceNotFoundException;
@@ -63,6 +64,12 @@ public class BookingServiceImpl implements BookingService {
         if (dto.getBookingType() == null || dto.getBookingType().isBlank()) {
             throw new BookingException.MissingBookingTypeException();
         }
+        try {
+            PriceType.valueOf(dto.getBookingType().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new BookingException.InvalidBookingTypeException("Invalid bookingType: " + dto.getBookingType());
+        }
+
 
         if (dto.getStatus() == null || dto.getStatus().isBlank()) {
             throw new BookingException.MissingStatusException();

@@ -7,6 +7,7 @@ import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import lombok.AllArgsConstructor;
+import net.java.hms_backend.dto.HotelInfoDto;
 import net.java.hms_backend.dto.InvoiceDto;
 import net.java.hms_backend.dto.InvoiceFilterRequest;
 import net.java.hms_backend.entity.*;
@@ -15,6 +16,7 @@ import net.java.hms_backend.exception.ResourceNotFoundException;
 import net.java.hms_backend.mapper.InvoiceMapper;
 import net.java.hms_backend.repository.BookingRepository;
 import net.java.hms_backend.repository.InvoiceRepository;
+import net.java.hms_backend.service.HotelInfoService;
 import net.java.hms_backend.service.InvoiceService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -24,6 +26,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -40,6 +43,7 @@ public class InvoiceServiceImpl implements InvoiceService {
 
     private final InvoiceRepository invoiceRepository;
     private final BookingRepository bookingRepository;
+    private final HotelInfoService hotelInfoService;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -66,10 +70,19 @@ public class InvoiceServiceImpl implements InvoiceService {
         LocalDateTime start = booking.getActualCheckInTime() != null ? booking.getActualCheckInTime() : booking.getCheckInDate();
         LocalDateTime end = booking.getActualCheckOutTime() != null ? booking.getActualCheckOutTime() : booking.getCheckOutDate();
 
-        long days = java.time.Duration.between(start, end).toDays();
-        if (days <= 0) days = 1;
+        long durationInMinutes = Duration.between(start, end).toMinutes();
+        if (durationInMinutes <= 0) durationInMinutes = 60;
 
-        BigDecimal amount = BigDecimal.valueOf(roomPrice.getBasePrice() * days);
+        BigDecimal amount;
+        if (bookingPriceType == PriceType.HOURLY) {
+            double hours = Math.ceil(durationInMinutes / 60.0);
+            amount = BigDecimal.valueOf(roomPrice.getBasePrice() * hours);
+        } else {
+            long days = Duration.between(start, end).toDays();
+            if (days <= 0) days = 1;
+            amount = BigDecimal.valueOf(roomPrice.getBasePrice() * days);
+        }
+
 
         Invoice invoice = InvoiceMapper.mapToInvoice(invoiceDto, booking);
         invoice.setAmount(amount);
@@ -225,6 +238,8 @@ public class InvoiceServiceImpl implements InvoiceService {
     @Override
     public byte[] generateInvoicePdf(InvoiceDto invoiceDto) {
         try {
+            HotelInfoDto hotel = hotelInfoService.getHotelInfo();
+
             Booking booking = bookingRepository.findById(invoiceDto.getBookingId())
                     .orElseThrow(() -> new ResourceNotFoundException("Booking", "id", invoiceDto.getBookingId()));
             Invoice invoice = InvoiceMapper.mapToInvoice(invoiceDto, booking);
@@ -236,10 +251,10 @@ public class InvoiceServiceImpl implements InvoiceService {
             document.open();
 
             Font hotelFont = FontFactory.getFont(FontFactory.HELVETICA, 14, Font.BOLD);
-            document.add(new Paragraph("HOTELIO", hotelFont));
-            document.add(new Paragraph("123 Đường ABC, Quận 1, TP.HCM"));
-            document.add(new Paragraph("Phone: 0123-456-789 | Email: info@sunshinehotel.com"));
-            document.add(new Paragraph("MST: 123456789"));
+            document.add(new Paragraph(hotel.getName(), hotelFont));
+            document.add(new Paragraph(hotel.getAddress()));
+            document.add(new Paragraph("Phone: " + hotel.getPhone() + " | Email: " + hotel.getEmail()));
+            document.add(new Paragraph("MST: " + hotel.getTaxCode()));
             document.add(new Paragraph(" "));
 
             Font titleFont = FontFactory.getFont(FontFactory.HELVETICA, 20, Font.BOLD);

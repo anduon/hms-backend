@@ -64,4 +64,11 @@ public class BookingException extends RuntimeException {
             super("Check-out date must be after check-in date.");
         }
     }
+
+    public static class InvalidBookingTypeException extends BookingException {
+        public InvalidBookingTypeException(String message) {
+            super("Invalid booking type");
+        }
+    }
+
 }
