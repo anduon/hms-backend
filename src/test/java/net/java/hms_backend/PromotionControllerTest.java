@@ -74,7 +74,7 @@ class PromotionControllerTest {
 
     @Test
     void testMissingPromotionName_shouldReturn400() throws Exception {
-        PromotionDto dto = new PromotionDto(null, null, 10.0, LocalDate.now(), LocalDate.now().plusDays(5));
+        PromotionDto dto = new PromotionDto(null, null, 10.0, LocalDate.now(), LocalDate.now().plusDays(5), null, null, null, null);
 
         mockMvc.perform(post("/api/promotions")
                         .header("Authorization", "Bearer " + adminToken)
@@ -86,7 +86,7 @@ class PromotionControllerTest {
 
     @Test
     void testMissingDiscountPercent_shouldReturn400() throws Exception {
-        PromotionDto dto = new PromotionDto(null, "Summer Sale", null, LocalDate.now(), LocalDate.now().plusDays(5));
+        PromotionDto dto = new PromotionDto(null, "Summer Sale", null, LocalDate.now(), LocalDate.now().plusDays(5), null, null, null, null);
 
         mockMvc.perform(post("/api/promotions")
                         .header("Authorization", "Bearer " + adminToken)
@@ -98,7 +98,7 @@ class PromotionControllerTest {
 
     @Test
     void testMissingStartDate_shouldReturn400() throws Exception {
-        PromotionDto dto = new PromotionDto(null, "Summer Sale", 10.0, null, LocalDate.now().plusDays(5));
+        PromotionDto dto = new PromotionDto(null, "Summer Sale", 10.0, null, LocalDate.now().plusDays(5), null, null, null, null);
 
         mockMvc.perform(post("/api/promotions")
                         .header("Authorization", "Bearer " + adminToken)
@@ -110,7 +110,7 @@ class PromotionControllerTest {
 
     @Test
     void testMissingEndDate_shouldReturn400() throws Exception {
-        PromotionDto dto = new PromotionDto(null, "Summer Sale", 10.0, LocalDate.now(), null);
+        PromotionDto dto = new PromotionDto(null, "Summer Sale", 10.0, LocalDate.now(), null, null, null, null, null);
 
         mockMvc.perform(post("/api/promotions")
                         .header("Authorization", "Bearer " + adminToken)
@@ -122,7 +122,7 @@ class PromotionControllerTest {
 
     @Test
     void testAdminCanCreatePromotion_shouldReturn201() throws Exception {
-        PromotionDto dto = new PromotionDto(null, "Winter Sale", 20.0, LocalDate.now(), LocalDate.now().plusDays(5));
+        PromotionDto dto = new PromotionDto(null, "Winter Sale", 20.0, LocalDate.now(), LocalDate.now().plusDays(5), null, null, null, null);
 
         mockMvc.perform(post("/api/promotions")
                         .header("Authorization", "Bearer " + adminToken)
@@ -134,7 +134,7 @@ class PromotionControllerTest {
 
     @Test
     void testReceptionistCannotCreatePromotion_shouldReturn403() throws Exception {
-        PromotionDto dto = new PromotionDto(null, "Winter Sale", 20.0, LocalDate.now(), LocalDate.now().plusDays(5));
+        PromotionDto dto = new PromotionDto(null, "Winter Sale", 20.0, LocalDate.now(), LocalDate.now().plusDays(5), null, null, null, null);
 
         mockMvc.perform(post("/api/promotions")
                         .header("Authorization", "Bearer " + accountantToken)
@@ -180,7 +180,7 @@ class PromotionControllerTest {
     @Test
     void testAdminCanUpdatePromotion_shouldReturn200() throws Exception {
         Promotion promo = promotionRepository.findAll().get(0);
-        PromotionDto updated = new PromotionDto(null, "Updated Sale", 25.0, LocalDate.now(), LocalDate.now().plusDays(7));
+        PromotionDto updated = new PromotionDto(null, "Updated Sale", 25.0, LocalDate.now(), LocalDate.now().plusDays(7), null, null, null, null);
 
         mockMvc.perform(put("/api/promotions/" + promo.getId())
                         .header("Authorization", "Bearer " + adminToken)
@@ -193,7 +193,7 @@ class PromotionControllerTest {
     @Test
     void testReceptionistCannotUpdatePromotion_shouldReturn403() throws Exception {
         Promotion promo = promotionRepository.findAll().get(0);
-        PromotionDto updated = new PromotionDto(null, "Updated Sale", 25.0, LocalDate.now(), LocalDate.now().plusDays(7));
+        PromotionDto updated = new PromotionDto(null, "Updated Sale", 25.0, LocalDate.now(), LocalDate.now().plusDays(7), null, null, null, null);
 
         mockMvc.perform(put("/api/promotions/" + promo.getId())
                         .header("Authorization", "Bearer " + accountantToken)
@@ -237,7 +237,7 @@ class PromotionControllerTest {
 
     @Test
     void testCreatePromotionWithInvalidDiscount_shouldReturn400() throws Exception {
-        PromotionDto dto = new PromotionDto(null, "Crazy Sale", 150.0, LocalDate.now(), LocalDate.now().plusDays(5));
+        PromotionDto dto = new PromotionDto(null, "Crazy Sale", 150.0, LocalDate.now(), LocalDate.now().plusDays(5), null, null, null, null);
 
         mockMvc.perform(post("/api/promotions")
                         .header("Authorization", "Bearer " + adminToken)
@@ -249,7 +249,7 @@ class PromotionControllerTest {
 
     @Test
     void testCreatePromotionWithInvalidDateRange_shouldReturn400() throws Exception {
-        PromotionDto dto = new PromotionDto(null, "Reverse Sale", 20.0, LocalDate.now().plusDays(5), LocalDate.now());
+        PromotionDto dto = new PromotionDto(null, "Reverse Sale", 20.0, LocalDate.now().plusDays(5), LocalDate.now(), null, null, null, null);
 
         mockMvc.perform(post("/api/promotions")
                         .header("Authorization", "Bearer " + adminToken)

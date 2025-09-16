@@ -7,23 +7,27 @@ import net.java.hms_backend.entity.Room;
 public class BookingMapper {
 
     public static BookingDto toDto(Booking booking) {
-        return new BookingDto(
-                booking.getId(),
-                booking.getGuestFullName(),
-                booking.getGuestIdNumber(),
-                booking.getGuestNationality(),
-                booking.getRoom() != null ? booking.getRoom().getRoomNumber() : null,
-                booking.getCheckInDate(),
-                booking.getCheckOutDate(),
-                booking.getActualCheckInTime(),
-                booking.getActualCheckOutTime(),
-                booking.getBookingType(),
-                booking.getStatus(),
-                booking.getNumberOfGuests(),
-                booking.getNotes(),
-                booking.getCancelReason()
-        );
+        BookingDto dto = new BookingDto();
+        dto.setId(booking.getId());
+        dto.setGuestFullName(booking.getGuestFullName());
+        dto.setGuestIdNumber(booking.getGuestIdNumber());
+        dto.setGuestNationality(booking.getGuestNationality());
+        dto.setRoomNumber(booking.getRoom() != null ? booking.getRoom().getRoomNumber() : null);
+        dto.setCheckInDate(booking.getCheckInDate());
+        dto.setCheckOutDate(booking.getCheckOutDate());
+        dto.setActualCheckInTime(booking.getActualCheckInTime());
+        dto.setActualCheckOutTime(booking.getActualCheckOutTime());
+        dto.setBookingType(booking.getBookingType());
+        dto.setStatus(booking.getStatus());
+        dto.setNumberOfGuests(booking.getNumberOfGuests());
+        dto.setNotes(booking.getNotes());
+        dto.setCancelReason(booking.getCancelReason());
+
+        BaseMapper.mapAuditFields(booking, dto);
+
+        return dto;
     }
+
 
     public static Booking toEntity(BookingDto dto, Room room) {
         Booking booking = new Booking();

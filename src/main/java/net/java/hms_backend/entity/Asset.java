@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import net.java.hms_backend.entity.base.Auditable;
 
 import java.time.LocalDate;
 
@@ -12,7 +13,7 @@ import java.time.LocalDate;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Asset {
+public class Asset extends Auditable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

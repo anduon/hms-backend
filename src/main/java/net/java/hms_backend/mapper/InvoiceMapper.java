@@ -7,18 +7,21 @@ import net.java.hms_backend.entity.Invoice;
 public class InvoiceMapper {
 
     public static InvoiceDto mapToInvoiceDto(Invoice invoice) {
-        return new InvoiceDto(
-                invoice.getId(),
-                invoice.getBooking().getId(),
-                invoice.getAmount(),
-                invoice.getPaidAmount(),
-                invoice.getStatus(),
-                invoice.getIssuedDate(),
-                invoice.getDueDate(),
-                invoice.getPaymentMethod(),
-                invoice.getNotes()
-        );
+        InvoiceDto dto = new InvoiceDto();
+        dto.setId(invoice.getId());
+        dto.setBookingId(invoice.getBooking().getId());
+        dto.setAmount(invoice.getAmount());
+        dto.setPaidAmount(invoice.getPaidAmount());
+        dto.setStatus(invoice.getStatus());
+        dto.setIssuedDate(invoice.getIssuedDate());
+        dto.setDueDate(invoice.getDueDate());
+        dto.setPaymentMethod(invoice.getPaymentMethod());
+        dto.setNotes(invoice.getNotes());
+        BaseMapper.mapAuditFields(invoice, dto);
+
+        return dto;
     }
+
 
     public static Invoice mapToInvoice(InvoiceDto dto, Booking booking) {
         return new Invoice(

@@ -15,6 +15,7 @@ public class HotelInfoMapper {
         dto.setNumberOfFloors(entity.getNumberOfFloors());
         dto.setCheckInTime(entity.getCheckInTime());
         dto.setCheckOutTime(entity.getCheckOutTime());
+        BaseMapper.mapAuditFields(entity, dto);
         return dto;
     }
 

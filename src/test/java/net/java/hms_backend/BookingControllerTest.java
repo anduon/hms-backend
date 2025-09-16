@@ -21,7 +21,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -80,22 +79,18 @@ class BookingControllerTest {
     }
 
     BookingDto createSampleBookingDto() {
-        return new BookingDto(
-                null,
-                "Nguyễn Văn A",
-                "123456789",
-                "Việt Nam",
-                testRoom.getRoomNumber(),
-                LocalDateTime.now().plusDays(1),
-                LocalDateTime.now().plusDays(3),
-                null,
-                null,
-                "ONLINE",
-                "CONFIRMED",
-                2,
-                "Ghi chú",
-                null
-        );
+        BookingDto dto = new BookingDto();
+        dto.setGuestFullName("Nguyễn Văn A");
+        dto.setGuestIdNumber("123456789");
+        dto.setGuestNationality("Việt Nam");
+        dto.setRoomNumber(testRoom.getRoomNumber());
+        dto.setCheckInDate(LocalDateTime.now().plusDays(1));
+        dto.setCheckOutDate(LocalDateTime.now().plusDays(3));
+        dto.setBookingType("DAILY");
+        dto.setStatus("CONFIRMED");
+        dto.setNumberOfGuests(2);
+        dto.setNotes("Ghi chú");
+        return dto;
     }
 
     @Test

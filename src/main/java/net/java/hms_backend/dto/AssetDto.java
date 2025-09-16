@@ -6,11 +6,12 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class AssetDto {
+public class AssetDto implements AuditDto{
     private Long id;
     private String name;
     private String category;
@@ -20,4 +21,8 @@ public class AssetDto {
     private String note;
     @NotNull(message = "Room number is required")
     private Integer roomNumber;
+    private String createdBy;
+    private String updatedBy;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }

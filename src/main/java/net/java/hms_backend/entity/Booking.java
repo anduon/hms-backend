@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import net.java.hms_backend.entity.base.Auditable;
 
 import java.time.LocalDateTime;
 
@@ -14,7 +15,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Entity
 @Table(name = "booking")
-public class Booking {
+public class Booking extends Auditable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

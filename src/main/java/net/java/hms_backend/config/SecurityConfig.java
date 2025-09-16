@@ -46,7 +46,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/invoices/**").hasAnyRole("ADMIN","ACCOUNTANT","RECEPTIONIST")
                         .requestMatchers("/api/promotions/**").hasAnyRole("ADMIN","MANAGER")
                         .requestMatchers("/api/users/**").hasAnyRole("ADMIN", "MANAGER", "RECEPTIONIST", "ACCOUNTANT")
-                        .requestMatchers("/api/dashboard/**").hasAnyRole("ADMIN","MANAGER")
+                        .requestMatchers("/api/dashboard/**").hasAnyRole("ADMIN","MANAGER", "ACCOUNTANT")
                         .requestMatchers("/api/hotel-info/**").permitAll()
                         .requestMatchers(
                                 "/swagger-ui/**",
@@ -57,7 +57,7 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(ex -> ex
-                        .authenticationEntryPoint(authenticationEntryPoint) // 401
+                        .authenticationEntryPoint(authenticationEntryPoint)
                         .accessDeniedHandler(accessDeniedHandler)
                 )
 

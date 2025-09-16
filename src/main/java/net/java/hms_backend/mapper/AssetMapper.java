@@ -7,17 +7,21 @@ import net.java.hms_backend.entity.Room;
 public class AssetMapper {
 
     public static AssetDto toDto(Asset asset) {
-        return new AssetDto(
-                asset.getId(),
-                asset.getName(),
-                asset.getCategory(),
-                asset.getCondition(),
-                asset.getOriginalCost(),
-                asset.getPurchaseDate(),
-                asset.getNote(),
-                asset.getRoom().getRoomNumber()
-        );
+        AssetDto dto = new AssetDto();
+        dto.setId(asset.getId());
+        dto.setName(asset.getName());
+        dto.setCategory(asset.getCategory());
+        dto.setCondition(asset.getCondition());
+        dto.setOriginalCost(asset.getOriginalCost());
+        dto.setPurchaseDate(asset.getPurchaseDate());
+        dto.setNote(asset.getNote());
+        dto.setRoomNumber(asset.getRoom().getRoomNumber());
+
+        BaseMapper.mapAuditFields(asset, dto);
+
+        return dto;
     }
+
 
     public static Asset toEntity(AssetDto dto, Room room) {
         return new Asset(
