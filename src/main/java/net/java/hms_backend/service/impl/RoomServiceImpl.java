@@ -121,27 +121,55 @@ public class RoomServiceImpl implements RoomService {
     @Override
     public Page<RoomDto> filterRooms(RoomFilterRequest filter, int page, int size) {
         CriteriaBuilder cb = entityManager.getCriteriaBuilder();
-        CriteriaQuery<Room> query = cb.createQuery(Room.class);
-        Root<Room> room = query.from(Room.class);
-        query.select(room).distinct(true);
 
+        CriteriaQuery<Room> query = cb.createQuery(Room.class);
+        Root<Room> roomRoot = query.from(Room.class);
+        query.select(roomRoot).distinct(true);
+
+        List<Predicate> predicates = buildRoomPredicates(filter, cb, roomRoot, query);
+        query.where(cb.and(predicates.toArray(new Predicate[0])));
+
+        Pageable pageable = PageRequest.of(page, size);
+
+        List<Room> result = entityManager.createQuery(query)
+                .setFirstResult((int) pageable.getOffset())
+                .setMaxResults(pageable.getPageSize())
+                .getResultList();
+
+        CriteriaQuery<Long> countQuery = cb.createQuery(Long.class);
+        Root<Room> countRoot = countQuery.from(Room.class);
+        countQuery.select(cb.countDistinct(countRoot));
+
+        List<Predicate> countPredicates = buildRoomPredicates(filter, cb, countRoot, countQuery);
+        countQuery.where(cb.and(countPredicates.toArray(new Predicate[0])));
+        Long total = entityManager.createQuery(countQuery).getSingleResult();
+
+        Page<Room> roomsPage = new PageImpl<>(result, pageable, total);
+
+        Optional<Promotion> promotionOpt = promotionService.getActivePromotion();
+        return roomsPage.map(room -> RoomMapper.mapToRoomDto(room, promotionOpt));
+    }
+
+
+    private List<Predicate> buildRoomPredicates(RoomFilterRequest filter, CriteriaBuilder cb, Root<Room> root, CriteriaQuery<?> query) {
         List<Predicate> predicates = new ArrayList<>();
 
         if (filter.getRoomType() != null && !filter.getRoomType().isBlank()) {
-            predicates.add(cb.equal(room.get("roomType"), filter.getRoomType()));
+            predicates.add(cb.equal(root.get("roomType"), filter.getRoomType()));
         }
 
         if (filter.getStatus() != null && !filter.getStatus().isBlank()) {
-            predicates.add(cb.equal(room.get("status"), filter.getStatus()));
+            predicates.add(cb.equal(root.get("status"), filter.getStatus()));
         }
 
         if (filter.getLocation() != null && !filter.getLocation().isBlank()) {
-            predicates.add(cb.equal(room.get("location"), filter.getLocation()));
+            predicates.add(cb.equal(root.get("location"), filter.getLocation()));
         }
 
         if (filter.getMaxOccupancy() != null) {
-            predicates.add(cb.greaterThanOrEqualTo(room.get("maxOccupancy"), filter.getMaxOccupancy()));
+            predicates.add(cb.greaterThanOrEqualTo(root.get("maxOccupancy"), filter.getMaxOccupancy()));
         }
+
         if (filter.getDesiredCheckIn() != null && filter.getDesiredCheckOut() != null) {
             Subquery<Long> subquery = query.subquery(Long.class);
             Root<Booking> booking = subquery.from(Booking.class);
@@ -150,7 +178,7 @@ public class RoomServiceImpl implements RoomService {
             subquery.select(cb.literal(1L));
 
             Predicate overlap = cb.and(
-                    cb.equal(bookingRoom.get("id"), room.get("id")),
+                    cb.equal(bookingRoom, root),
                     cb.lessThan(booking.get("checkInDate"), filter.getDesiredCheckOut()),
                     cb.greaterThan(booking.get("checkOutDate"), filter.getDesiredCheckIn()),
                     cb.notEqual(booking.get("status"), "CANCELLED")
@@ -160,27 +188,7 @@ public class RoomServiceImpl implements RoomService {
             predicates.add(cb.not(cb.exists(subquery)));
         }
 
-        query.where(cb.and(predicates.toArray(new Predicate[0])));
-
-        Pageable pageable = PageRequest.of(page, size);
-
-        List<Room> result = entityManager.createQuery(query)
-                .setFirstResult(page * size)
-                .setMaxResults(size)
-                .getResultList();
-
-        CriteriaQuery<Long> countQuery = cb.createQuery(Long.class);
-        Root<Room> countRoot = countQuery.from(Room.class);
-        countQuery.select(cb.countDistinct(countRoot));
-        countQuery.where(cb.and(predicates.toArray(new Predicate[0])));
-        Long total = entityManager.createQuery(countQuery).getSingleResult();
-
-        Page<Room> roomsPage = new PageImpl<>(result, pageable, total);
-
-        Optional<Promotion> promotionOpt = promotionService.getActivePromotion();
-
-        return roomsPage.map(roomEntity -> RoomMapper.mapToRoomDto(roomEntity, promotionOpt));
+        return predicates;
     }
-
 
 }
