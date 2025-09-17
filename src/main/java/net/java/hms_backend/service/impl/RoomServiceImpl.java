@@ -3,6 +3,7 @@ package net.java.hms_backend.service.impl;
 import lombok.AllArgsConstructor;
 import net.java.hms_backend.dto.RoomDto;
 import net.java.hms_backend.dto.RoomFilterRequest;
+import net.java.hms_backend.entity.Booking;
 import net.java.hms_backend.entity.Promotion;
 import net.java.hms_backend.entity.Room;
 import net.java.hms_backend.entity.RoomPrice;
@@ -126,22 +127,25 @@ public class RoomServiceImpl implements RoomService {
 
         List<Predicate> predicates = new ArrayList<>();
 
-        if (filter.getRoomType() != null)
+        if (filter.getRoomType() != null && !filter.getRoomType().isBlank()) {
             predicates.add(cb.equal(room.get("roomType"), filter.getRoomType()));
+        }
 
-        if (filter.getStatus() != null)
+        if (filter.getStatus() != null && !filter.getStatus().isBlank()) {
             predicates.add(cb.equal(room.get("status"), filter.getStatus()));
+        }
 
-        if (filter.getLocation() != null)
+        if (filter.getLocation() != null && !filter.getLocation().isBlank()) {
             predicates.add(cb.equal(room.get("location"), filter.getLocation()));
+        }
 
-        if (filter.getMaxOccupancy() != null)
+        if (filter.getMaxOccupancy() != null) {
             predicates.add(cb.greaterThanOrEqualTo(room.get("maxOccupancy"), filter.getMaxOccupancy()));
-
+        }
         if (filter.getDesiredCheckIn() != null && filter.getDesiredCheckOut() != null) {
             Subquery<Long> subquery = query.subquery(Long.class);
-            Root<net.java.hms_backend.entity.Booking> booking = subquery.from(net.java.hms_backend.entity.Booking.class);
-            Join<net.java.hms_backend.entity.Booking, Room> bookingRoom = booking.join("room");
+            Root<Booking> booking = subquery.from(Booking.class);
+            Join<Booking, Room> bookingRoom = booking.join("room");
 
             subquery.select(cb.literal(1L));
 

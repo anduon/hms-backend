@@ -220,39 +220,52 @@ public class BookingServiceImpl implements BookingService {
     private List<Predicate> buildPredicates(CriteriaBuilder cb, Root<Booking> root, BookingFilterRequest filter) {
         List<Predicate> predicates = new ArrayList<>();
 
-        if (filter.getGuestFullName() != null) {
-            predicates.add(cb.like(cb.lower(root.get("guestFullName")), "%" + filter.getGuestFullName().toLowerCase() + "%"));
+        if (filter.getGuestFullName() != null && !filter.getGuestFullName().isBlank()) {
+            predicates.add(cb.like(
+                    cb.lower(root.get("guestFullName")),
+                    "%" + filter.getGuestFullName().toLowerCase() + "%"
+            ));
         }
-        if (filter.getGuestIdNumber() != null) {
+
+        if (filter.getGuestIdNumber() != null && !filter.getGuestIdNumber().isBlank()) {
             predicates.add(cb.equal(root.get("guestIdNumber"), filter.getGuestIdNumber()));
         }
-        if (filter.getGuestNationality() != null) {
+
+        if (filter.getGuestNationality() != null && !filter.getGuestNationality().isBlank()) {
             predicates.add(cb.equal(root.get("guestNationality"), filter.getGuestNationality()));
         }
-        if (filter.getStatus() != null) {
+
+        if (filter.getStatus() != null && !filter.getStatus().isBlank()) {
             predicates.add(cb.equal(root.get("status"), filter.getStatus()));
         }
-        if (filter.getBookingType() != null) {
+
+        if (filter.getBookingType() != null && !filter.getBookingType().isBlank()) {
             predicates.add(cb.equal(root.get("bookingType"), filter.getBookingType()));
         }
+
         if (filter.getCheckInDateFrom() != null) {
             predicates.add(cb.greaterThanOrEqualTo(root.get("checkInDate"), filter.getCheckInDateFrom()));
         }
+
         if (filter.getCheckInDateTo() != null) {
             predicates.add(cb.lessThanOrEqualTo(root.get("checkInDate"), filter.getCheckInDateTo()));
         }
+
         if (filter.getCheckOutDateFrom() != null) {
             predicates.add(cb.greaterThanOrEqualTo(root.get("checkOutDate"), filter.getCheckOutDateFrom()));
         }
+
         if (filter.getCheckOutDateTo() != null) {
             predicates.add(cb.lessThanOrEqualTo(root.get("checkOutDate"), filter.getCheckOutDateTo()));
         }
+
         if (filter.getRoomId() != null) {
             predicates.add(cb.equal(root.get("room").get("id"), filter.getRoomId()));
         }
 
         return predicates;
     }
+
 
 
 

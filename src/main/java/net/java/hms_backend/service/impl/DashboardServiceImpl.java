@@ -27,31 +27,37 @@ public class DashboardServiceImpl implements DashboardService {
     private final InvoiceRepository invoiceRepository;
 
     @Override
-    public DashboardDto getDashboardSummary() {
+    public DashboardDto getDashboardSummary(int days) {
         DashboardDto dashboardDto = new DashboardDto();
 
-        LocalDateTime now = LocalDateTime.now();
-        LocalDate today = now.toLocalDate();
-        LocalDateTime startOfDay = today.atStartOfDay();
-        LocalDateTime endOfDay = today.atTime(LocalTime.MAX);
+        LocalDate today = LocalDate.now();
+        LocalDate startDate = today.minusDays(days - 1);
+        LocalDateTime startDateTime = startDate.atStartOfDay();
+        LocalDateTime endDateTime = today.atTime(LocalTime.MAX);
 
         dashboardDto.setTotalBookings(bookingRepository.count());
         dashboardDto.setCancelledBookings(bookingRepository.countByStatus("CANCELLED"));
-
-        dashboardDto.setActiveBookings((long) bookingRepository.findByStatusAndCheckOutDateAfter("CONFIRMED", now).size());
-
-        dashboardDto.setCheckedInBookings((long) bookingRepository.findByActualCheckInTimeIsNotNull().size());
-
-        dashboardDto.setCheckedOutBookingsToday((long) bookingRepository.findByActualCheckOutTimeBetween(startOfDay, endOfDay).size());
-
-        dashboardDto.setUpcomingCheckInsToday((long) bookingRepository.findByCheckInDateBetween(startOfDay, endOfDay).size());
-
-        dashboardDto.setUpcomingCheckOutsToday((long) bookingRepository.findByCheckOutDateBetween(startOfDay, endOfDay).size());
+        dashboardDto.setActiveBookings(
+                (long) bookingRepository.findByStatusAndCheckOutDateAfter("CHECKEDIN", endDateTime).size()
+        );
+        dashboardDto.setCheckedInBookings(
+                (long) bookingRepository.findByActualCheckInTimeIsNotNull().size()
+        );
+        dashboardDto.setCheckedOutBookingsToday(
+                (long) bookingRepository.findByActualCheckOutTimeBetween(startDateTime, endDateTime).size()
+        );
+        dashboardDto.setUpcomingCheckInsToday(
+                (long) bookingRepository.findByCheckInDateBetween(startDateTime, endDateTime).size()
+        );
+        dashboardDto.setUpcomingCheckOutsToday(
+                (long) bookingRepository.findByCheckOutDateBetween(startDateTime, endDateTime).size()
+        );
 
         LocalDateTime firstDayOfMonth = today.with(TemporalAdjusters.firstDayOfMonth()).atStartOfDay();
         LocalDateTime lastDayOfMonth = today.with(TemporalAdjusters.lastDayOfMonth()).atTime(LocalTime.MAX);
-        dashboardDto.setTotalGuestsCurrentMonth(bookingRepository.countTotalGuestsBetween(firstDayOfMonth, lastDayOfMonth));
-
+        dashboardDto.setTotalGuestsCurrentMonth(
+                bookingRepository.countTotalGuestsBetween(firstDayOfMonth, lastDayOfMonth)
+        );
 
         dashboardDto.setTotalInvoices(invoiceRepository.count());
         dashboardDto.setPaidInvoices(invoiceRepository.countByStatus("PAID"));
@@ -63,32 +69,52 @@ public class DashboardServiceImpl implements DashboardService {
         BigDecimal outstandingAmount = invoiceRepository.sumOutstandingAmountByStatus("PENDING");
         dashboardDto.setTotalOutstandingAmount(outstandingAmount != null ? outstandingAmount : BigDecimal.ZERO);
 
-
-        LocalDateTime sevenDaysAgo = startOfDay.minusDays(6);
-        List<Booking> recentBookings = bookingRepository.findByCheckInDateAfter(sevenDaysAgo);
+        List<Booking> recentBookings = bookingRepository.findByCheckInDateBetween(startDateTime, endDateTime);
         Map<LocalDate, Long> bookingsPerDayMap = recentBookings.stream()
-                .collect(Collectors.groupingBy(booking -> booking.getCheckInDate().toLocalDate(), Collectors.counting()));
-        dashboardDto.setBookingsPerDayLast7Days(populateMissingDates(bookingsPerDayMap, today.minusDays(6), today));
+                .filter(b -> b.getCheckInDate() != null)
+                .collect(Collectors.groupingBy(
+                        b -> b.getCheckInDate().toLocalDate(),
+                        Collectors.counting()
+                ));
+        dashboardDto.setBookingsPerDayLast7Days(
+                populateMissingDates(bookingsPerDayMap, startDate, today)
+        );
 
         Map<String, Long> bookingsPerStatusMap = bookingRepository.findAll().stream()
-                .collect(Collectors.groupingBy(Booking::getStatus, Collectors.counting()));
+                .filter(b -> b.getStatus() != null)
+                .collect(Collectors.groupingBy(
+                        Booking::getStatus,
+                        Collectors.counting()
+                ));
         dashboardDto.setBookingsPerStatus(bookingsPerStatusMap);
 
         Map<String, Long> invoicesPerStatusMap = invoiceRepository.findAll().stream()
-                .collect(Collectors.groupingBy(Invoice::getStatus, Collectors.counting()));
+                .filter(i -> i.getStatus() != null)
+                .collect(Collectors.groupingBy(
+                        Invoice::getStatus,
+                        Collectors.counting()
+                ));
         dashboardDto.setInvoicesPerStatus(invoicesPerStatusMap);
 
         Map<String, BigDecimal> revenuePerPaymentMethodMap = invoiceRepository.findByStatus("PAID").stream()
-                .collect(Collectors.groupingBy(Invoice::getPaymentMethod,
-                        Collectors.reducing(BigDecimal.ZERO, Invoice::getPaidAmount, BigDecimal::add)));
+                .filter(i -> i.getPaymentMethod() != null && i.getPaidAmount() != null)
+                .collect(Collectors.groupingBy(
+                        Invoice::getPaymentMethod,
+                        Collectors.reducing(BigDecimal.ZERO, Invoice::getPaidAmount, BigDecimal::add)
+                ));
         dashboardDto.setRevenuePerPaymentMethod(revenuePerPaymentMethodMap);
 
-        List<Invoice> recentPaidInvoices = invoiceRepository.findByIssuedDateAfter(sevenDaysAgo);
+        List<Invoice> recentPaidInvoices = invoiceRepository.findByIssuedDateBetween(startDateTime, endDateTime);
         Map<LocalDate, BigDecimal> dailyRevenueMap = recentPaidInvoices.stream()
-                .filter(invoice -> "PAID".equals(invoice.getStatus()))
-                .collect(Collectors.groupingBy(invoice -> invoice.getIssuedDate().toLocalDate(),
-                        Collectors.reducing(BigDecimal.ZERO, Invoice::getPaidAmount, BigDecimal::add)));
-        dashboardDto.setDailyRevenueLast7Days(populateMissingRevenueDates(dailyRevenueMap, today.minusDays(6), today));
+                .filter(i -> "PAID".equals(i.getStatus()))
+                .filter(i -> i.getIssuedDate() != null && i.getPaidAmount() != null)
+                .collect(Collectors.groupingBy(
+                        i -> i.getIssuedDate().toLocalDate(),
+                        Collectors.reducing(BigDecimal.ZERO, Invoice::getPaidAmount, BigDecimal::add)
+                ));
+        dashboardDto.setDailyRevenueLast7Days(
+                populateMissingRevenueDates(dailyRevenueMap, startDate, today)
+        );
 
         return dashboardDto;
     }

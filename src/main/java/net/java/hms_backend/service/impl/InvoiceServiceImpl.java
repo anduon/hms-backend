@@ -207,27 +207,35 @@ public class InvoiceServiceImpl implements InvoiceService {
         if (filter.getMinAmount() != null) {
             predicates.add(cb.greaterThanOrEqualTo(root.get("amount"), filter.getMinAmount()));
         }
+
         if (filter.getMaxAmount() != null) {
             predicates.add(cb.lessThanOrEqualTo(root.get("amount"), filter.getMaxAmount()));
         }
-        if (filter.getStatus() != null && !filter.getStatus().isEmpty()) {
+
+        if (filter.getStatus() != null && !filter.getStatus().isBlank()) {
             predicates.add(cb.equal(root.get("status"), filter.getStatus()));
         }
+
         if (filter.getIssuedDateFrom() != null) {
             predicates.add(cb.greaterThanOrEqualTo(root.get("issuedDate"), filter.getIssuedDateFrom()));
         }
+
         if (filter.getIssuedDateTo() != null) {
             predicates.add(cb.lessThanOrEqualTo(root.get("issuedDate"), filter.getIssuedDateTo()));
         }
+
         if (filter.getDueDateFrom() != null) {
             predicates.add(cb.greaterThanOrEqualTo(root.get("dueDate"), filter.getDueDateFrom()));
         }
+
         if (filter.getDueDateTo() != null) {
             predicates.add(cb.lessThanOrEqualTo(root.get("dueDate"), filter.getDueDateTo()));
         }
-        if (filter.getPaymentMethod() != null && !filter.getPaymentMethod().isEmpty()) {
+
+        if (filter.getPaymentMethod() != null && !filter.getPaymentMethod().isBlank()) {
             predicates.add(cb.equal(root.get("paymentMethod"), filter.getPaymentMethod()));
         }
+
         if (filter.getBookingId() != null) {
             predicates.add(cb.equal(root.get("booking").get("id"), filter.getBookingId()));
         }

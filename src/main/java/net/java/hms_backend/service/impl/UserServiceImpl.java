@@ -124,16 +124,25 @@ public class UserServiceImpl implements UserService {
     private List<Predicate> buildUserPredicates(UserFilterRequest filter, Root<User> root, CriteriaBuilder cb) {
         List<Predicate> predicates = new ArrayList<>();
 
-        if (filter.getFullName() != null && !filter.getFullName().isEmpty()) {
-            predicates.add(cb.like(cb.lower(root.get("fullName")), "%" + filter.getFullName().toLowerCase() + "%"));
+        if (filter.getFullName() != null && !filter.getFullName().isBlank()) {
+            predicates.add(cb.like(
+                    cb.lower(root.get("fullName")),
+                    "%" + filter.getFullName().toLowerCase() + "%"
+            ));
         }
 
-        if (filter.getPhoneNumber() != null && !filter.getPhoneNumber().isEmpty()) {
-            predicates.add(cb.like(root.get("phoneNumber"), "%" + filter.getPhoneNumber() + "%"));
+        if (filter.getPhoneNumber() != null && !filter.getPhoneNumber().isBlank()) {
+            predicates.add(cb.like(
+                    cb.lower(root.get("phoneNumber")),
+                    "%" + filter.getPhoneNumber().toLowerCase() + "%"
+            ));
         }
 
-        if (filter.getEmail() != null && !filter.getEmail().isEmpty()) {
-            predicates.add(cb.like(cb.lower(root.get("email")), "%" + filter.getEmail().toLowerCase() + "%"));
+        if (filter.getEmail() != null && !filter.getEmail().isBlank()) {
+            predicates.add(cb.like(
+                    cb.lower(root.get("email")),
+                    "%" + filter.getEmail().toLowerCase() + "%"
+            ));
         }
 
         if (filter.getRoles() != null && !filter.getRoles().isEmpty()) {
@@ -143,6 +152,7 @@ public class UserServiceImpl implements UserService {
 
         return predicates;
     }
+
 
     @Override
     public Page<UserDto> searchUsers(UserFilterRequest filter, int page, int size) {
