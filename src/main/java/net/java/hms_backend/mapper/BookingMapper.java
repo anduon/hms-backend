@@ -13,6 +13,7 @@ public class BookingMapper {
         dto.setGuestIdNumber(booking.getGuestIdNumber());
         dto.setGuestNationality(booking.getGuestNationality());
         dto.setRoomNumber(booking.getRoom() != null ? booking.getRoom().getRoomNumber() : null);
+        dto.setRoomId(booking.getRoom() != null ? booking.getRoom().getId() : null);
         dto.setCheckInDate(booking.getCheckInDate());
         dto.setCheckOutDate(booking.getCheckOutDate());
         dto.setActualCheckInTime(booking.getActualCheckInTime());

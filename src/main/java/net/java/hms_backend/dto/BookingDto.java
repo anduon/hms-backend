@@ -21,6 +21,8 @@ public class BookingDto implements AuditDto {
     @NotNull(message = "Room number is required")
     private Integer roomNumber;
 
+    private Long roomId;
+
     @NotNull(message = "Check-in date is required")
     private LocalDateTime checkInDate;
 

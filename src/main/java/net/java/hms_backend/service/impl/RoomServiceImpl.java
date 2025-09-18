@@ -192,8 +192,8 @@ public class RoomServiceImpl implements RoomService {
 
             Predicate overlap = cb.and(
                     cb.equal(bookingRoom, root),
-                    cb.lessThan(booking.get("checkInDate"), filter.getDesiredCheckOut()),
-                    cb.greaterThan(booking.get("checkOutDate"), filter.getDesiredCheckIn()),
+                    cb.lessThanOrEqualTo(booking.get("checkInDate"), filter.getDesiredCheckOut()),
+                    cb.greaterThanOrEqualTo(booking.get("checkOutDate"), filter.getDesiredCheckIn()),
                     cb.notEqual(booking.get("status"), "CANCELLED")
             );
 
