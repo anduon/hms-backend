@@ -3,6 +3,7 @@ package net.java.hms_backend.service.impl;
 import lombok.AllArgsConstructor;
 import net.java.hms_backend.dto.RoomDto;
 import net.java.hms_backend.dto.RoomFilterRequest;
+import net.java.hms_backend.dto.RoomPriceDto;
 import net.java.hms_backend.entity.Booking;
 import net.java.hms_backend.entity.Promotion;
 import net.java.hms_backend.entity.Room;
@@ -22,6 +23,7 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -104,6 +106,17 @@ public class RoomServiceImpl implements RoomService {
 
         if (roomDto.getLocation() != null) {
             room.setLocation(roomDto.getLocation());
+        }
+
+        if (roomDto.getPrices() != null) {
+            room.getPrices().clear();
+            for (RoomPriceDto dto : roomDto.getPrices()) {
+                RoomPrice price = new RoomPrice();
+                price.setRoom(room);
+                price.setPriceType(dto.getPriceType());
+                price.setBasePrice(dto.getBasePrice());
+                room.getPrices().add(price);
+            }
         }
 
         Room updatedRoom = roomRepository.save(room);
