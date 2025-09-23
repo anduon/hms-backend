@@ -88,6 +88,12 @@ public class BookingServiceImpl implements BookingService {
                 dto.getCheckOutDate()
         );
 
+        if (dto.getNumberOfGuests() > room.getMaxOccupancy()) {
+            throw new BookingException.ExceedsRoomCapacityException(
+                    "Number of guests (" + dto.getNumberOfGuests() + ") exceeds room capacity (" + room.getMaxOccupancy() + ")"
+            );
+        }
+
         if (!overlappingBookings.isEmpty()) {
             throw new BookingException.BookingConflictException("Room is already booked during the requested period.");
         }

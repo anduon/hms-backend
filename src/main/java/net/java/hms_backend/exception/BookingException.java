@@ -71,4 +71,9 @@ public class BookingException extends RuntimeException {
         }
     }
 
+    public static class ExceedsRoomCapacityException extends BookingException {
+        public ExceedsRoomCapacityException(String message) {
+            super("Number of guests exceeds room capacity");
+        }
+    }
 }
