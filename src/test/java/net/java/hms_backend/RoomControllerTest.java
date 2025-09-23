@@ -5,6 +5,7 @@ import net.java.hms_backend.config.JwtUtil;
 import net.java.hms_backend.dto.RoomDto;
 import net.java.hms_backend.entity.Role;
 import net.java.hms_backend.entity.User;
+import net.java.hms_backend.repository.BookingRepository;
 import net.java.hms_backend.repository.RoleRepository;
 import net.java.hms_backend.repository.RoomRepository;
 import net.java.hms_backend.repository.UserRepository;
@@ -42,6 +43,9 @@ class RoomControllerTest {
     @Autowired
     private RoomRepository roomRepository;
 
+    @Autowired
+    private BookingRepository bookingRepository;
+
     private String jwtToken;
     private String accountantToken;
     private RoomDto testRoom;
@@ -57,6 +61,7 @@ class RoomControllerTest {
 
     @BeforeEach
     void setup() {
+        bookingRepository.deleteAll();
         roomRepository.deleteAll();
         userRepository.deleteAll();
         roleRepository.deleteAll();

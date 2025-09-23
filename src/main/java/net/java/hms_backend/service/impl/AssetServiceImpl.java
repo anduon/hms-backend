@@ -103,42 +103,51 @@ public class AssetServiceImpl implements AssetService {
         Stream<Asset> stream = assets.stream();
 
         if (filter.getName() != null) {
-            stream = stream.filter(a -> a.getName().toLowerCase().contains(filter.getName().toLowerCase()));
+            stream = stream.filter(a -> a.getName() != null &&
+                    a.getName().toLowerCase().contains(filter.getName().toLowerCase()));
         }
 
         if (filter.getCategory() != null) {
-            stream = stream.filter(a -> a.getCategory().equalsIgnoreCase(filter.getCategory()));
+            stream = stream.filter(a -> a.getCategory() != null &&
+                    a.getCategory().equalsIgnoreCase(filter.getCategory()));
         }
 
         if (filter.getCondition() != null) {
-            stream = stream.filter(a -> a.getCondition().equalsIgnoreCase(filter.getCondition()));
+            stream = stream.filter(a -> a.getCondition() != null &&
+                    a.getCondition().equalsIgnoreCase(filter.getCondition()));
         }
 
         if (filter.getMinCost() != null) {
-            stream = stream.filter(a -> a.getOriginalCost() >= filter.getMinCost());
+            stream = stream.filter(a -> a.getOriginalCost() != null &&
+                    a.getOriginalCost() >= filter.getMinCost());
         }
 
         if (filter.getMaxCost() != null) {
-            stream = stream.filter(a -> a.getOriginalCost() <= filter.getMaxCost());
+            stream = stream.filter(a -> a.getOriginalCost() != null &&
+                    a.getOriginalCost() <= filter.getMaxCost());
         }
 
         if (filter.getPurchaseDateFrom() != null) {
-            stream = stream.filter(a -> !a.getPurchaseDate().isBefore(filter.getPurchaseDateFrom()));
+            stream = stream.filter(a -> a.getPurchaseDate() != null &&
+                    !a.getPurchaseDate().isBefore(filter.getPurchaseDateFrom()));
         }
 
         if (filter.getPurchaseDateTo() != null) {
-            stream = stream.filter(a -> !a.getPurchaseDate().isAfter(filter.getPurchaseDateTo()));
+            stream = stream.filter(a -> a.getPurchaseDate() != null &&
+                    !a.getPurchaseDate().isAfter(filter.getPurchaseDateTo()));
         }
 
         if (filter.getRoomNumber() != null) {
-            stream = stream.filter(a -> a.getRoom().getRoomNumber().equals(filter.getRoomNumber()));
+            stream = stream.filter(a -> a.getRoom() != null &&
+                    a.getRoom().getRoomNumber() != null &&
+                    a.getRoom().getRoomNumber().equals(filter.getRoomNumber()));
         }
 
         List<Asset> filteredAssets = stream.collect(Collectors.toList());
 
         Pageable pageable = PageRequest.of(page, size);
         int start = Math.min((int) pageable.getOffset(), filteredAssets.size());
-        int end = Math.min((start + pageable.getPageSize()), filteredAssets.size());
+        int end = Math.min(start + pageable.getPageSize(), filteredAssets.size());
 
         List<Asset> pagedAssets = filteredAssets.subList(start, end);
 
@@ -146,6 +155,7 @@ public class AssetServiceImpl implements AssetService {
 
         return assetsPage.map(AssetMapper::toDto);
     }
+
 
     @Override
     public AssetDto getAssetById(Long id) {

@@ -6,14 +6,17 @@ import net.java.hms_backend.entity.Promotion;
 public class PromotionMapper {
 
     public static PromotionDto toDto(Promotion entity) {
-        return new PromotionDto(
-                entity.getId(),
-                entity.getName(),
-                entity.getDiscountPercent(),
-                entity.getStartDate(),
-                entity.getEndDate()
-        );
+        PromotionDto dto = new PromotionDto();
+        dto.setId(entity.getId());
+        dto.setName(entity.getName());
+        dto.setDiscountPercent(entity.getDiscountPercent());
+        dto.setStartDate(entity.getStartDate());
+        dto.setEndDate(entity.getEndDate());
+        BaseMapper.mapAuditFields(entity, dto);
+
+        return dto;
     }
+
 
     public static Promotion toEntity(PromotionDto dto) {
         Promotion promotion = new Promotion();

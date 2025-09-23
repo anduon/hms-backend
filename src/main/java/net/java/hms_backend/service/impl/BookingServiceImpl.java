@@ -11,6 +11,7 @@ import lombok.AllArgsConstructor;
 import net.java.hms_backend.dto.BookingDto;
 import net.java.hms_backend.dto.BookingFilterRequest;
 import net.java.hms_backend.entity.Booking;
+import net.java.hms_backend.entity.PriceType;
 import net.java.hms_backend.entity.Room;
 import net.java.hms_backend.exception.BookingException;
 import net.java.hms_backend.exception.ResourceNotFoundException;
@@ -63,6 +64,12 @@ public class BookingServiceImpl implements BookingService {
         if (dto.getBookingType() == null || dto.getBookingType().isBlank()) {
             throw new BookingException.MissingBookingTypeException();
         }
+        try {
+            PriceType.valueOf(dto.getBookingType().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new BookingException.InvalidBookingTypeException("Invalid bookingType: " + dto.getBookingType());
+        }
+
 
         if (dto.getStatus() == null || dto.getStatus().isBlank()) {
             throw new BookingException.MissingStatusException();
@@ -213,39 +220,52 @@ public class BookingServiceImpl implements BookingService {
     private List<Predicate> buildPredicates(CriteriaBuilder cb, Root<Booking> root, BookingFilterRequest filter) {
         List<Predicate> predicates = new ArrayList<>();
 
-        if (filter.getGuestFullName() != null) {
-            predicates.add(cb.like(cb.lower(root.get("guestFullName")), "%" + filter.getGuestFullName().toLowerCase() + "%"));
+        if (filter.getGuestFullName() != null && !filter.getGuestFullName().isBlank()) {
+            predicates.add(cb.like(
+                    cb.lower(root.get("guestFullName")),
+                    "%" + filter.getGuestFullName().toLowerCase() + "%"
+            ));
         }
-        if (filter.getGuestIdNumber() != null) {
+
+        if (filter.getGuestIdNumber() != null && !filter.getGuestIdNumber().isBlank()) {
             predicates.add(cb.equal(root.get("guestIdNumber"), filter.getGuestIdNumber()));
         }
-        if (filter.getGuestNationality() != null) {
+
+        if (filter.getGuestNationality() != null && !filter.getGuestNationality().isBlank()) {
             predicates.add(cb.equal(root.get("guestNationality"), filter.getGuestNationality()));
         }
-        if (filter.getStatus() != null) {
+
+        if (filter.getStatus() != null && !filter.getStatus().isBlank()) {
             predicates.add(cb.equal(root.get("status"), filter.getStatus()));
         }
-        if (filter.getBookingType() != null) {
+
+        if (filter.getBookingType() != null && !filter.getBookingType().isBlank()) {
             predicates.add(cb.equal(root.get("bookingType"), filter.getBookingType()));
         }
+
         if (filter.getCheckInDateFrom() != null) {
             predicates.add(cb.greaterThanOrEqualTo(root.get("checkInDate"), filter.getCheckInDateFrom()));
         }
+
         if (filter.getCheckInDateTo() != null) {
             predicates.add(cb.lessThanOrEqualTo(root.get("checkInDate"), filter.getCheckInDateTo()));
         }
+
         if (filter.getCheckOutDateFrom() != null) {
             predicates.add(cb.greaterThanOrEqualTo(root.get("checkOutDate"), filter.getCheckOutDateFrom()));
         }
+
         if (filter.getCheckOutDateTo() != null) {
             predicates.add(cb.lessThanOrEqualTo(root.get("checkOutDate"), filter.getCheckOutDateTo()));
         }
+
         if (filter.getRoomId() != null) {
             predicates.add(cb.equal(root.get("room").get("id"), filter.getRoomId()));
         }
 
         return predicates;
     }
+
 
 
 

@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    container_name: hms-db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: hms
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: damion824628
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build: .
+    container_name: hms-backend
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    environment:
+      DB_URL: jdbc:postgresql://host.docker.internal:5432/hms
+      DB_USERNAME: postgres
+      DB_PASSWORD: damion824628
+      JWT_SECRET: damion824628damion824628damion824628
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

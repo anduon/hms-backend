@@ -25,7 +25,7 @@ public class InvoiceController {
         return new ResponseEntity<>(savedInvoice, HttpStatus.CREATED);
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','RECEPTIONIST')")
+    @PreAuthorize("hasAnyRole('ADMIN','ACCOUNTANT')")
     @GetMapping
     public ResponseEntity<Page<InvoiceDto>> getAllInvoices(@RequestParam(defaultValue = "0") int page,
                                                            @RequestParam(defaultValue = "10") int size) {
@@ -42,14 +42,14 @@ public class InvoiceController {
         return ResponseEntity.ok(invoiceService.updateInvoice(id, invoiceDto));
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','RECEPTIONIST')")
+    @PreAuthorize("hasAnyRole('ADMIN','ACCOUNTANT')")
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteInvoice(@PathVariable Long id) {
         invoiceService.deleteInvoice(id);
         return ResponseEntity.ok("Invoice deleted successfully.");
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','RECEPTIONIST')")
+    @PreAuthorize("hasAnyRole('ADMIN','ACCOUNTANT')")
     @PostMapping("/filter")
     public ResponseEntity<Page<InvoiceDto>> filterInvoices(
             @RequestBody InvoiceFilterRequest filter,

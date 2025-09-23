@@ -31,7 +31,7 @@ public class RoomMapper {
             }
         }
         dto.setPrices(priceDtos);
-
+        BaseMapper.mapAuditFields(room, dto);
         return dto;
     }
 

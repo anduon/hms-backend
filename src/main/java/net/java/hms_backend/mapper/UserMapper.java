@@ -10,17 +10,19 @@ import java.util.stream.Collectors;
 public class UserMapper {
 
     public static UserDto toDto(User user) {
-        return new UserDto(
-                user.getId(),
-                user.getFullName(),
-                user.getPhoneNumber(),
-                user.getEmail(),
-                user.getRoles().stream()
-                        .map(Role::getName)
-                        .collect(Collectors.toList()),
-                null
-        );
+        UserDto dto = new UserDto();
+        dto.setId(user.getId());
+        dto.setFullName(user.getFullName());
+        dto.setPhoneNumber(user.getPhoneNumber());
+        dto.setEmail(user.getEmail());
+        dto.setRoles(user.getRoles().stream()
+                .map(Role::getName)
+                .collect(Collectors.toList()));
+        dto.setPassword(null);
+        BaseMapper.mapAuditFields(user, dto);
+        return dto;
     }
+
 
     public static User toEntity(UserDto dto, List<Role> roles) {
         User user = new User();

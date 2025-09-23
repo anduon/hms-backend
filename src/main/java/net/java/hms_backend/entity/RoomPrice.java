@@ -2,6 +2,7 @@ package net.java.hms_backend.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import net.java.hms_backend.entity.base.Auditable;
 
 @Getter
 @Setter
@@ -10,7 +11,7 @@ import lombok.*;
 @Entity
 @Table(name = "room_price")
 
-public class RoomPrice {
+public class RoomPrice extends Auditable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

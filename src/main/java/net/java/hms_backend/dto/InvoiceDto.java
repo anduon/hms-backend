@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class InvoiceDto {
+public class InvoiceDto implements AuditDto {
     private Long id;
     private Long bookingId;
     private BigDecimal amount;
@@ -20,4 +20,9 @@ public class InvoiceDto {
     private LocalDateTime dueDate;
     private String paymentMethod;
     private String notes;
+
+    private String createdBy;
+    private String updatedBy;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }

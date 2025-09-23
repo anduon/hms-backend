@@ -132,39 +132,46 @@ public class PromotionServiceImpl implements PromotionService {
         List<Promotion> promotions = promotionRepository.findAll();
         Stream<Promotion> stream = promotions.stream();
 
-        if (request.getName() != null && !request.getName().isEmpty()) {
-            stream = stream.filter(p -> p.getName().toLowerCase().contains(request.getName().toLowerCase()));
+        if (request.getName() != null && !request.getName().isBlank()) {
+            stream = stream.filter(p -> p.getName() != null &&
+                    p.getName().toLowerCase().contains(request.getName().toLowerCase()));
         }
 
         if (request.getMinDiscount() != null) {
-            stream = stream.filter(p -> p.getDiscountPercent() >= request.getMinDiscount());
+            stream = stream.filter(p -> p.getDiscountPercent() != null &&
+                    p.getDiscountPercent() >= request.getMinDiscount());
         }
 
         if (request.getMaxDiscount() != null) {
-            stream = stream.filter(p -> p.getDiscountPercent() <= request.getMaxDiscount());
+            stream = stream.filter(p -> p.getDiscountPercent() != null &&
+                    p.getDiscountPercent() <= request.getMaxDiscount());
         }
 
         if (request.getStartDateFrom() != null) {
-            stream = stream.filter(p -> !p.getStartDate().isBefore(request.getStartDateFrom()));
+            stream = stream.filter(p -> p.getStartDate() != null &&
+                    !p.getStartDate().isBefore(request.getStartDateFrom()));
         }
 
         if (request.getStartDateTo() != null) {
-            stream = stream.filter(p -> !p.getStartDate().isAfter(request.getStartDateTo()));
+            stream = stream.filter(p -> p.getStartDate() != null &&
+                    !p.getStartDate().isAfter(request.getStartDateTo()));
         }
 
         if (request.getEndDateFrom() != null) {
-            stream = stream.filter(p -> !p.getEndDate().isBefore(request.getEndDateFrom()));
+            stream = stream.filter(p -> p.getEndDate() != null &&
+                    !p.getEndDate().isBefore(request.getEndDateFrom()));
         }
 
         if (request.getEndDateTo() != null) {
-            stream = stream.filter(p -> !p.getEndDate().isAfter(request.getEndDateTo()));
+            stream = stream.filter(p -> p.getEndDate() != null &&
+                    !p.getEndDate().isAfter(request.getEndDateTo()));
         }
 
         List<Promotion> filteredPromotions = stream.toList();
 
         Pageable pageable = PageRequest.of(page, size);
         int start = Math.min((int) pageable.getOffset(), filteredPromotions.size());
-        int end = Math.min((start + pageable.getPageSize()), filteredPromotions.size());
+        int end = Math.min(start + pageable.getPageSize(), filteredPromotions.size());
 
         List<Promotion> pagedPromotions = filteredPromotions.subList(start, end);
 
@@ -172,5 +179,6 @@ public class PromotionServiceImpl implements PromotionService {
 
         return promotionPage.map(PromotionMapper::toDto);
     }
+
 
 }

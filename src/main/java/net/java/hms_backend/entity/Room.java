@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import net.java.hms_backend.entity.base.Auditable;
 
 import java.util.List;
 
@@ -14,7 +15,7 @@ import java.util.List;
 @AllArgsConstructor
 @Entity
 @Table(name = "room")
-public class Room {
+public class Room extends Auditable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

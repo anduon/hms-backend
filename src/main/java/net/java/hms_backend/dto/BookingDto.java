@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class BookingDto {
+public class BookingDto implements AuditDto {
     private Long id;
 
     @NotBlank(message = "Guest name is required")
@@ -20,6 +20,8 @@ public class BookingDto {
 
     @NotNull(message = "Room number is required")
     private Integer roomNumber;
+
+    private Long roomId;
 
     @NotNull(message = "Check-in date is required")
     private LocalDateTime checkInDate;
@@ -39,4 +41,9 @@ public class BookingDto {
     private Integer numberOfGuests;
     private String notes;
     private String cancelReason;
+
+    private String createdBy;
+    private String updatedBy;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }

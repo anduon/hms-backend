@@ -10,8 +10,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
-    Invoice findByBookingId(Long bookingId);
-
     Long countByStatus(String status);
 
     List<Invoice> findByStatus(String status);
@@ -22,5 +20,7 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
     @Query("SELECT SUM(i.amount - i.paidAmount) FROM Invoice i WHERE i.status = :status AND i.amount > i.paidAmount")
     BigDecimal sumOutstandingAmountByStatus(@Param("status") String status);
 
-    List<Invoice> findByIssuedDateAfter(LocalDateTime date);
+    boolean existsByBookingId(Long bookingId);
+
+    List<Invoice> findByIssuedDateBetween(LocalDateTime startDateTime, LocalDateTime endDateTime);
 }
