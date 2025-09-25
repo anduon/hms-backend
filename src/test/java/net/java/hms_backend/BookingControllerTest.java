@@ -75,6 +75,7 @@ class BookingControllerTest {
         testRoom.setRoomNumber(101);
         testRoom.setRoomType("DELUXE");
         testRoom.setStatus("AVAILABLE");
+        testRoom.setMaxOccupancy(10);
         roomRepository.save(testRoom);
     }
 
