@@ -18,6 +18,7 @@ import net.java.hms_backend.repository.BookingRepository;
 import net.java.hms_backend.repository.InvoiceRepository;
 import net.java.hms_backend.service.HotelInfoService;
 import net.java.hms_backend.service.InvoiceService;
+import net.java.hms_backend.service.PromotionService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -26,10 +27,12 @@ import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import com.lowagie.text.*;
 import com.lowagie.text.pdf.PdfPCell;
@@ -44,6 +47,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     private final InvoiceRepository invoiceRepository;
     private final BookingRepository bookingRepository;
     private final HotelInfoService hotelInfoService;
+    private final PromotionService promotionService;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -73,17 +77,24 @@ public class InvoiceServiceImpl implements InvoiceService {
         long durationInMinutes = Duration.between(start, end).toMinutes();
         if (durationInMinutes <= 0) durationInMinutes = 60;
 
+        Optional<Promotion> promotionOpt = promotionService.getActivePromotion();
+        double basePrice = roomPrice.getBasePrice();
+        if (promotionOpt.isPresent()) {
+            double discountPercent = promotionOpt.get().getDiscountPercent();
+            basePrice *= (1 - discountPercent / 100.0);
+        }
+
         BigDecimal amount;
         if (bookingPriceType == PriceType.HOURLY) {
             double hours = Math.ceil(durationInMinutes / 60.0);
-            amount = BigDecimal.valueOf(roomPrice.getBasePrice() * hours);
+            amount = BigDecimal.valueOf(basePrice * hours);
         } else {
             long days = Duration.between(start, end).toDays();
             if (days <= 0) days = 1;
-            amount = BigDecimal.valueOf(roomPrice.getBasePrice() * days);
+            amount = BigDecimal.valueOf(basePrice * days);
         }
 
-
+        amount = amount.setScale(0, RoundingMode.HALF_UP);
         Invoice invoice = InvoiceMapper.mapToInvoice(invoiceDto, booking);
         invoice.setAmount(amount);
         invoice.setPaidAmount(BigDecimal.ZERO);
@@ -131,11 +142,28 @@ public class InvoiceServiceImpl implements InvoiceService {
 
             LocalDateTime start = booking.getActualCheckInTime() != null ? booking.getActualCheckInTime() : booking.getCheckInDate();
             LocalDateTime end = booking.getActualCheckOutTime() != null ? booking.getActualCheckOutTime() : booking.getCheckOutDate();
+            long durationInMinutes = Duration.between(start, end).toMinutes();
+            if (durationInMinutes <= 0) durationInMinutes = 60;
 
-            long days = java.time.Duration.between(start, end).toDays();
-            if (days <= 0) days = 1;
+            Optional<Promotion> promotionOpt = promotionService.getActivePromotion();
 
-            BigDecimal amount = BigDecimal.valueOf(roomPrice.getBasePrice() * days);
+            double basePrice = roomPrice.getBasePrice();
+            if (promotionOpt.isPresent()) {
+                double discountPercent = promotionOpt.get().getDiscountPercent();
+                basePrice *= (1 - discountPercent / 100.0);
+            }
+
+            BigDecimal amount;
+            if (bookingPriceType == PriceType.HOURLY) {
+                double hours = Math.ceil(durationInMinutes / 60.0);
+                amount = BigDecimal.valueOf(basePrice * hours);
+            } else {
+                long days = Duration.between(start, end).toDays();
+                if (days <= 0) days = 1;
+                amount = BigDecimal.valueOf(basePrice * days);
+            }
+
+            amount = amount.setScale(0, RoundingMode.HALF_UP);
             invoice.setAmount(amount);
         }
 

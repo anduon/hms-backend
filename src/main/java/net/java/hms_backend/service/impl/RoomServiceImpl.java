@@ -75,8 +75,12 @@ public class RoomServiceImpl implements RoomService {
     public RoomDto getRoomById(Long id) {
         Room room = roomRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Room", "id", id));
-        return RoomMapper.mapToRoomDto(room);
+
+        Optional<Promotion> promotionOpt = promotionService.getActivePromotion();
+
+        return RoomMapper.mapToRoomDto(room, promotionOpt);
     }
+
 
     @Override
     public RoomDto updateRoom(Long id, RoomDto roomDto) {

@@ -53,9 +53,11 @@ public class RoomMapper {
                 finalPrice *= (1 - discount);
             }
 
+            long roundedPrice = Math.round(finalPrice);
+
             RoomPriceDto priceDto = new RoomPriceDto();
             priceDto.setPriceType(price.getPriceType());
-            priceDto.setBasePrice(finalPrice);
+            priceDto.setBasePrice((double)roundedPrice);
             priceDtos.add(priceDto);
         }
 
