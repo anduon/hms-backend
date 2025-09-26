@@ -89,7 +89,7 @@ public class InvoiceServiceImpl implements InvoiceService {
             double hours = Math.ceil(durationInMinutes / 60.0);
             amount = BigDecimal.valueOf(basePrice * hours);
         } else {
-            long days = Duration.between(start, end).toDays();
+            long days = (long) Math.ceil(Duration.between(start, end).toMinutes() / 1440.0);
             if (days <= 0) days = 1;
             amount = BigDecimal.valueOf(basePrice * days);
         }
@@ -158,7 +158,7 @@ public class InvoiceServiceImpl implements InvoiceService {
                 double hours = Math.ceil(durationInMinutes / 60.0);
                 amount = BigDecimal.valueOf(basePrice * hours);
             } else {
-                long days = Duration.between(start, end).toDays();
+                long days = (long) Math.ceil(Duration.between(start, end).toMinutes() / 1440.0);
                 if (days <= 0) days = 1;
                 amount = BigDecimal.valueOf(basePrice * days);
             }
