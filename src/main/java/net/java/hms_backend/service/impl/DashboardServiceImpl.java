@@ -38,7 +38,7 @@ public class DashboardServiceImpl implements DashboardService {
         dashboardDto.setTotalBookings(bookingRepository.count());
         dashboardDto.setCancelledBookings(bookingRepository.countByStatus("CANCELLED"));
         dashboardDto.setActiveBookings(
-                (long) bookingRepository.findByStatusAndCheckOutDateAfter("CHECKEDIN", endDateTime).size()
+                (long) bookingRepository.findByStatusAndCheckOutDateAfter("CHECKED IN", endDateTime).size()
         );
         dashboardDto.setCheckedInBookings(
                 (long) bookingRepository.findByActualCheckInTimeIsNotNull().size()
