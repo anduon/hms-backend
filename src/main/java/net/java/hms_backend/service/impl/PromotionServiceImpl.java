@@ -16,6 +16,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -34,8 +35,15 @@ public class PromotionServiceImpl implements PromotionService {
                 .findByStartDateLessThanEqualAndEndDateGreaterThanEqual(today, today);
         return promotions.stream()
                 .max(Comparator.comparing(Promotion::getDiscountPercent));
-
     }
+
+    @Override
+    public Optional<Promotion> getPromotionForBooking(LocalDateTime checkIn, LocalDateTime checkOut) {
+        return promotionRepository.findAll().stream()
+                .filter(p -> !p.getEndDate().isBefore(checkIn.toLocalDate()) && !p.getStartDate().isAfter(checkOut.toLocalDate()))
+                .max(Comparator.comparingDouble(Promotion::getDiscountPercent));
+    }
+
 
     @Override
     public PromotionDto createPromotion(PromotionDto dto) {

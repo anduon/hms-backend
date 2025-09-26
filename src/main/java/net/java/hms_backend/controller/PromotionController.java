@@ -8,10 +8,12 @@ import net.java.hms_backend.entity.Promotion;
 import net.java.hms_backend.mapper.PromotionMapper;
 import net.java.hms_backend.service.PromotionService;
 import org.springframework.data.domain.Page;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 @RestController
@@ -48,9 +50,12 @@ public class PromotionController {
         return ResponseEntity.ok("Promotion deleted successfully.");
     }
 
-    @GetMapping("/active")
-    public ResponseEntity<PromotionDto> getActivePromotion() {
-        Optional<Promotion> promotionOpt = promotionService.getActivePromotion();
+    @GetMapping("/booking-promotion")
+    public ResponseEntity<PromotionDto> getPromotionForBooking(
+            @RequestParam("checkIn") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime checkIn,
+            @RequestParam("checkOut") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime checkOut) {
+
+        Optional<Promotion> promotionOpt = promotionService.getPromotionForBooking(checkIn, checkOut);
 
         return promotionOpt
                 .map(promotion -> ResponseEntity.ok(PromotionMapper.toDto(promotion)))

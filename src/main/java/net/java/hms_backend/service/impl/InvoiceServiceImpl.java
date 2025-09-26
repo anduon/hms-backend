@@ -71,13 +71,13 @@ public class InvoiceServiceImpl implements InvoiceService {
                 .findFirst()
                 .orElseThrow(() -> new ResourceNotFoundException("RoomPrice", "priceType", bookingPriceType));
 
-        LocalDateTime start = booking.getActualCheckInTime() != null ? booking.getActualCheckInTime() : booking.getCheckInDate();
-        LocalDateTime end = booking.getActualCheckOutTime() != null ? booking.getActualCheckOutTime() : booking.getCheckOutDate();
+        LocalDateTime start = booking.getCheckInDate();
+        LocalDateTime end = booking.getCheckOutDate();
 
         long durationInMinutes = Duration.between(start, end).toMinutes();
         if (durationInMinutes <= 0) durationInMinutes = 60;
 
-        Optional<Promotion> promotionOpt = promotionService.getActivePromotion();
+        Optional<Promotion> promotionOpt = promotionService.getPromotionForBooking(start, end);
         double basePrice = roomPrice.getBasePrice();
         if (promotionOpt.isPresent()) {
             double discountPercent = promotionOpt.get().getDiscountPercent();
@@ -140,12 +140,12 @@ public class InvoiceServiceImpl implements InvoiceService {
                     .findFirst()
                     .orElseThrow(() -> new ResourceNotFoundException("RoomPrice", "priceType", bookingPriceType));
 
-            LocalDateTime start = booking.getActualCheckInTime() != null ? booking.getActualCheckInTime() : booking.getCheckInDate();
-            LocalDateTime end = booking.getActualCheckOutTime() != null ? booking.getActualCheckOutTime() : booking.getCheckOutDate();
+            LocalDateTime start = booking.getCheckInDate();
+            LocalDateTime end = booking.getCheckOutDate();
             long durationInMinutes = Duration.between(start, end).toMinutes();
             if (durationInMinutes <= 0) durationInMinutes = 60;
 
-            Optional<Promotion> promotionOpt = promotionService.getActivePromotion();
+            Optional<Promotion> promotionOpt = promotionService.getPromotionForBooking(start, end);
 
             double basePrice = roomPrice.getBasePrice();
             if (promotionOpt.isPresent()) {

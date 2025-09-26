@@ -20,6 +20,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -163,8 +164,17 @@ public class RoomServiceImpl implements RoomService {
 
         Page<Room> roomsPage = new PageImpl<>(result, pageable, total);
 
-        Optional<Promotion> promotionOpt = promotionService.getActivePromotion();
-        return roomsPage.map(room -> RoomMapper.mapToRoomDto(room, promotionOpt));
+        Optional<Promotion> promotionOpt;
+        if (filter.getDesiredCheckIn() != null && filter.getDesiredCheckOut() != null) {
+            promotionOpt = promotionService.getPromotionForBooking(
+                    filter.getDesiredCheckIn(),
+                    filter.getDesiredCheckOut()
+            );
+        } else {
+            promotionOpt = Optional.empty();
+        }
+        Optional<Promotion> finalPromotionOpt = promotionOpt;
+        return roomsPage.map(room -> RoomMapper.mapToRoomDto(room, finalPromotionOpt));
     }
 
 
