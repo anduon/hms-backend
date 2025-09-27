@@ -34,6 +34,9 @@ public class DashboardServiceImpl implements DashboardService {
         LocalDate startDate = today.minusDays(days - 1);
         LocalDateTime startDateTime = startDate.atStartOfDay();
         LocalDateTime endDateTime = today.atTime(LocalTime.MAX);
+        LocalDateTime startOfToday = LocalDate.now().atStartOfDay();
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime endOfToday = LocalDate.now().atTime(LocalTime.MAX);
 
         dashboardDto.setTotalBookings(bookingRepository.count());
         dashboardDto.setCancelledBookings(bookingRepository.countByStatus("CANCELLED"));
@@ -44,13 +47,13 @@ public class DashboardServiceImpl implements DashboardService {
                 (long) bookingRepository.findByActualCheckInTimeIsNotNull().size()
         );
         dashboardDto.setCheckedOutBookingsToday(
-                (long) bookingRepository.findByActualCheckOutTimeBetween(startDateTime, endDateTime).size()
+                (long) bookingRepository.findByActualCheckOutTimeBetween(startOfToday, now).size()
         );
         dashboardDto.setUpcomingCheckInsToday(
-                (long) bookingRepository.findByCheckInDateBetween(startDateTime, endDateTime).size()
+                (long) bookingRepository.findByCheckInDateBetween(now, endOfToday).size()
         );
         dashboardDto.setUpcomingCheckOutsToday(
-                (long) bookingRepository.findByCheckOutDateBetween(startDateTime, endDateTime).size()
+                (long) bookingRepository.findByCheckOutDateBetween(now, endOfToday).size()
         );
 
         LocalDateTime firstDayOfMonth = today.with(TemporalAdjusters.firstDayOfMonth()).atStartOfDay();
