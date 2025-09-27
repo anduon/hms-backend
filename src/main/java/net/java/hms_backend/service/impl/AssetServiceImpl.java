@@ -11,10 +11,7 @@ import net.java.hms_backend.mapper.AssetMapper;
 import net.java.hms_backend.repository.AssetRepository;
 import net.java.hms_backend.repository.RoomRepository;
 import net.java.hms_backend.service.AssetService;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -45,7 +42,7 @@ public class AssetServiceImpl implements AssetService {
 
     @Override
     public Page<AssetDto> getAllAssets(int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
         Page<Asset> assetsPage = assetRepository.findAll(pageable);
 
         return assetsPage.map(AssetMapper::toDto);
@@ -145,7 +142,7 @@ public class AssetServiceImpl implements AssetService {
 
         List<Asset> filteredAssets = stream.collect(Collectors.toList());
 
-        Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
         int start = Math.min((int) pageable.getOffset(), filteredAssets.size());
         int end = Math.min(start + pageable.getPageSize(), filteredAssets.size());
 

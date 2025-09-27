@@ -14,17 +14,12 @@ import net.java.hms_backend.mapper.RoomMapper;
 import net.java.hms_backend.repository.RoomRepository;
 import net.java.hms_backend.service.PromotionService;
 import net.java.hms_backend.service.RoomService;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -63,10 +58,8 @@ public class RoomServiceImpl implements RoomService {
     @Override
     public Page<RoomDto> getAllRooms(int page, int size) {
         Optional<Promotion> promotionOpt = promotionService.getActivePromotion();
-
-        Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(page, size, Sort.by("roomNumber").ascending());
         Page<Room> roomsPage = roomRepository.findAll(pageable);
-
         return roomsPage.map(room -> RoomMapper.mapToRoomDto(room, promotionOpt));
     }
 
@@ -147,8 +140,7 @@ public class RoomServiceImpl implements RoomService {
         List<Predicate> predicates = buildRoomPredicates(filter, cb, roomRoot, query);
         query.where(cb.and(predicates.toArray(new Predicate[0])));
 
-        Pageable pageable = PageRequest.of(page, size);
-
+        Pageable pageable = PageRequest.of(page, size, Sort.by("roomNumber").ascending());
         List<Room> result = entityManager.createQuery(query)
                 .setFirstResult((int) pageable.getOffset())
                 .setMaxResults(pageable.getPageSize())

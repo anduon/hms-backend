@@ -19,10 +19,7 @@ import net.java.hms_backend.repository.InvoiceRepository;
 import net.java.hms_backend.service.HotelInfoService;
 import net.java.hms_backend.service.InvoiceService;
 import net.java.hms_backend.service.PromotionService;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
@@ -114,7 +111,7 @@ public class InvoiceServiceImpl implements InvoiceService {
 
     @Override
     public Page<InvoiceDto> getAllInvoices(int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
         Page<Invoice> invoicesPage = invoiceRepository.findAll(pageable);
         return invoicesPage.map(InvoiceMapper::mapToInvoiceDto);
     }
@@ -210,7 +207,7 @@ public class InvoiceServiceImpl implements InvoiceService {
         List<Predicate> predicates = buildPredicates(filter, cb, invoice);
         query.where(cb.and(predicates.toArray(new Predicate[0])));
 
-        Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
 
         List<Invoice> result = entityManager.createQuery(query)
                 .setFirstResult((int) pageable.getOffset())

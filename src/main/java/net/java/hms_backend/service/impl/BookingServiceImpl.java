@@ -19,10 +19,7 @@ import net.java.hms_backend.mapper.BookingMapper;
 import net.java.hms_backend.repository.BookingRepository;
 import net.java.hms_backend.repository.RoomRepository;
 import net.java.hms_backend.service.BookingService;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -118,7 +115,7 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     public Page<BookingDto> getAllBookings(int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
         Page<Booking> bookingsPage = bookingRepository.findAll(pageable);
         return bookingsPage.map(BookingMapper::toDto);
     }
@@ -204,7 +201,7 @@ public class BookingServiceImpl implements BookingService {
         List<Predicate> predicates = buildPredicates(cb, booking, filter);
         query.where(cb.and(predicates.toArray(new Predicate[0])));
 
-        Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
 
         List<Booking> result = entityManager.createQuery(query)
                 .setFirstResult(page * size)
