@@ -50,6 +50,15 @@ public class PromotionController {
         return ResponseEntity.ok("Promotion deleted successfully.");
     }
 
+    @GetMapping("/active")
+    public ResponseEntity<PromotionDto> getActivePromotion() {
+        Optional<Promotion> promotionOpt = promotionService.getActivePromotion();
+
+        return promotionOpt
+                .map(promotion -> ResponseEntity.ok(PromotionMapper.toDto(promotion)))
+                .orElseGet(() -> ResponseEntity.noContent().build());
+    }
+
     @GetMapping("/booking-promotion")
     public ResponseEntity<PromotionDto> getPromotionForBooking(
             @RequestParam("checkIn") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime checkIn,
