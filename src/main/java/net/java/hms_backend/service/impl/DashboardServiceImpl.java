@@ -6,7 +6,9 @@ import net.java.hms_backend.entity.Booking;
 import net.java.hms_backend.entity.Invoice;
 import net.java.hms_backend.repository.BookingRepository;
 import net.java.hms_backend.repository.InvoiceRepository;
+import net.java.hms_backend.service.AuditLogService;
 import net.java.hms_backend.service.DashboardService;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -25,6 +27,7 @@ public class DashboardServiceImpl implements DashboardService {
 
     private final BookingRepository bookingRepository;
     private final InvoiceRepository invoiceRepository;
+    private final AuditLogService auditLogService;
 
     @Override
     public DashboardDto getDashboardSummary(int days) {
@@ -117,6 +120,19 @@ public class DashboardServiceImpl implements DashboardService {
                 ));
         dashboardDto.setDailyRevenueLast7Days(
                 populateMissingRevenueDates(dailyRevenueMap, startDate, today)
+        );
+
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        String details = "Viewed dashboard summary for last " + days + " days (" +
+                startDate + " → " + today + "), totalBookings=" + dashboardDto.getTotalBookings() +
+                ", totalRevenue=" + dashboardDto.getTotalRevenueGenerated();
+
+        auditLogService.log(
+                username,
+                "READ",
+                "Dashboard",
+                null,
+                details
         );
 
         return dashboardDto;

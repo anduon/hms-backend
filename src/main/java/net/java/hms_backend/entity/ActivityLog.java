@@ -22,6 +22,8 @@ public class ActivityLog {
     private String action;
     private String entity;
     private Long entityId;
+
+    @Column(columnDefinition = "TEXT")
     private String details;
 }
 
