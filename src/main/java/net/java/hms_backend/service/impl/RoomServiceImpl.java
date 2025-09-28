@@ -17,6 +17,7 @@ import net.java.hms_backend.service.RoomService;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -199,9 +200,15 @@ public class RoomServiceImpl implements RoomService {
             Predicate overlap = cb.and(
                     cb.equal(bookingRoom, root),
                     cb.lessThanOrEqualTo(booking.get("checkInDate"), filter.getDesiredCheckOut()),
-                    cb.greaterThanOrEqualTo(booking.get("checkOutDate"), filter.getDesiredCheckIn()),
+                    cb.greaterThanOrEqualTo(
+                            cb.<LocalDateTime>selectCase()
+                                    .when(cb.isNotNull(booking.get("actualCheckOutTime")), booking.get("actualCheckOutTime"))
+                                    .otherwise(booking.get("checkOutDate")),
+                            filter.getDesiredCheckIn()
+                    ),
                     cb.notEqual(booking.get("status"), "CANCELLED")
             );
+
 
             subquery.where(overlap);
             predicates.add(cb.not(cb.exists(subquery)));
