@@ -376,7 +376,7 @@ public class BookingServiceImpl implements BookingService {
         if (filter.getCheckInDateTo() != null) details.append("checkInDateTo=").append(filter.getCheckInDateTo()).append("; ");
         if (filter.getCheckOutDateFrom() != null) details.append("checkOutDateFrom=").append(filter.getCheckOutDateFrom()).append("; ");
         if (filter.getCheckOutDateTo() != null) details.append("checkOutDateTo=").append(filter.getCheckOutDateTo()).append("; ");
-        if (filter.getRoomId() != null) details.append("roomId=").append(filter.getRoomId()).append("; ");
+        if (filter.getRoomId() != null) details.append("roomNo=").append(filter.getRoomId()).append("; ");
         details.append("page=").append(page).append(", size=").append(size)
                 .append(", total results=").append(total);
 
@@ -433,7 +433,7 @@ public class BookingServiceImpl implements BookingService {
         }
 
         if (filter.getRoomId() != null) {
-            predicates.add(cb.equal(root.get("room").get("id"), filter.getRoomId()));
+            predicates.add(cb.equal(root.get("room").get("roomNumber"), filter.getRoomId()));
         }
 
         return predicates;
