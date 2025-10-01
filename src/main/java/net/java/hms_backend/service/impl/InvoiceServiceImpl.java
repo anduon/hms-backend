@@ -336,27 +336,19 @@ public class InvoiceServiceImpl implements InvoiceService {
             document.add(new Paragraph(" "));
 
             BigDecimal subTotal = invoice.getAmount();
-            BigDecimal vat = subTotal.multiply(BigDecimal.valueOf(0.1));
-            BigDecimal grandTotal = subTotal.add(vat);
 
             PdfPTable summaryTable = new PdfPTable(2);
             summaryTable.setWidthPercentage(50);
             summaryTable.setHorizontalAlignment(Element.ALIGN_RIGHT);
 
-            summaryTable.addCell("Tổng tiền (chưa VAT)");
+            summaryTable.addCell("Tổng tiền");
             summaryTable.addCell(subTotal.toPlainString());
-
-            summaryTable.addCell("VAT (10%)");
-            summaryTable.addCell(vat.toPlainString());
-
-            summaryTable.addCell("TỔNG THANH TOÁN");
-            summaryTable.addCell(grandTotal.toPlainString());
 
             summaryTable.addCell("Đã thanh toán");
             summaryTable.addCell(invoice.getPaidAmount().toPlainString());
 
             summaryTable.addCell("Còn lại");
-            summaryTable.addCell(grandTotal.subtract(invoice.getPaidAmount()).toPlainString());
+            summaryTable.addCell(subTotal.subtract(invoice.getPaidAmount()).toPlainString());
 
             document.add(summaryTable);
             document.add(new Paragraph(" "));
