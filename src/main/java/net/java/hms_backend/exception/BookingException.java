@@ -76,4 +76,11 @@ public class BookingException extends RuntimeException {
             super("Number of guests exceeds room capacity");
         }
     }
+
+    public static class BookingHasInvoiceException extends BookingException {
+        public BookingHasInvoiceException(Long bookingId) {
+            super("Cannot delete booking with ID " + bookingId + " because it has an associated invoice.");
+        }
+    }
+
 }

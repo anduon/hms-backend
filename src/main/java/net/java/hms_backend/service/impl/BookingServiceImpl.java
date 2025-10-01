@@ -17,6 +17,7 @@ import net.java.hms_backend.exception.BookingException;
 import net.java.hms_backend.exception.ResourceNotFoundException;
 import net.java.hms_backend.mapper.BookingMapper;
 import net.java.hms_backend.repository.BookingRepository;
+import net.java.hms_backend.repository.InvoiceRepository;
 import net.java.hms_backend.repository.RoomRepository;
 import net.java.hms_backend.service.AuditLogService;
 import net.java.hms_backend.service.BookingService;
@@ -35,6 +36,7 @@ public class BookingServiceImpl implements BookingService {
     private final BookingRepository bookingRepository;
     private final RoomRepository roomRepository;
     private final AuditLogService auditLogService;
+    private final InvoiceRepository invoiceRepository;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -311,6 +313,10 @@ public class BookingServiceImpl implements BookingService {
     public void deleteBooking(Long id) {
         Booking booking = bookingRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking", "id", id));
+        if (invoiceRepository.existsByBookingId(id)) {
+            throw new BookingException.BookingHasInvoiceException(id);
+        }
+
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
 
         String details = "Deleted booking with ID: " + booking.getId() +
