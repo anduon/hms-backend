@@ -250,7 +250,9 @@ public class PromotionServiceImpl implements PromotionService {
                     !p.getEndDate().isAfter(request.getEndDateTo()));
         }
 
-        List<Promotion> filteredPromotions = stream.toList();
+        List<Promotion> filteredPromotions = stream
+                .sorted(Comparator.comparing(Promotion::getId).reversed())
+                .toList();
 
         Pageable pageable = PageRequest.of(page, size);
         int start = Math.min((int) pageable.getOffset(), filteredPromotions.size());

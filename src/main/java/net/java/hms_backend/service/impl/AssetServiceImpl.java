@@ -18,6 +18,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -242,7 +243,9 @@ public class AssetServiceImpl implements AssetService {
                     a.getRoom().getRoomNumber().equals(filter.getRoomNumber()));
         }
 
-        List<Asset> filteredAssets = stream.collect(Collectors.toList());
+        List<Asset> filteredAssets = stream
+                .sorted(Comparator.comparing(Asset::getId).reversed())
+                .collect(Collectors.toList());
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
         int start = Math.min((int) pageable.getOffset(), filteredAssets.size());

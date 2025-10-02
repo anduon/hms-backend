@@ -346,6 +346,7 @@ public class BookingServiceImpl implements BookingService {
 
         List<Predicate> predicates = buildPredicates(cb, booking, filter);
         query.where(cb.and(predicates.toArray(new Predicate[0])));
+        query.orderBy(cb.desc(booking.get("id")));
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
 

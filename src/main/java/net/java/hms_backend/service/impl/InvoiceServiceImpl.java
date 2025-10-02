@@ -301,6 +301,7 @@ public class InvoiceServiceImpl implements InvoiceService {
 
         List<Predicate> predicates = buildPredicates(filter, cb, invoice);
         query.where(cb.and(predicates.toArray(new Predicate[0])));
+        query.orderBy(cb.desc(invoice.get("id")));
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
 
