@@ -225,6 +225,7 @@ public class RoomServiceImpl implements RoomService {
 
         List<Predicate> predicates = buildRoomPredicates(filter, cb, roomRoot, query);
         query.where(cb.and(predicates.toArray(new Predicate[0])));
+        query.orderBy(cb.asc(roomRoot.get("roomNumber")));
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("roomNumber").ascending());
         List<Room> result = entityManager.createQuery(query)
