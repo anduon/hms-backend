@@ -65,5 +65,13 @@ public class NotificationServiceImpl implements NotificationService {
                 .orElseThrow(() -> new ResourceNotFoundException("Notification", "id", notificationId));
         notificationRepository.delete(notification);
     }
+
+    public void notifyAdminsAndManagers(String type, String title, String message) {
+        List<User> recipients = userRepository.findByRoles_NameIn(List.of("ADMIN", "MANAGER"));
+        for (User user : recipients) {
+            sendNotification(user, type, title, message);
+        }
+    }
+
 }
 

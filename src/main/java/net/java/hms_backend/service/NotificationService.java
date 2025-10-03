@@ -17,4 +17,7 @@ public interface NotificationService {
     void markAsRead(Long notificationId);
 
     void deleteNotification(Long notificationId);
+
+    void notifyAdminsAndManagers(String type, String title, String message);
+
 }

@@ -13,6 +13,7 @@ import net.java.hms_backend.repository.AssetRepository;
 import net.java.hms_backend.repository.RoomRepository;
 import net.java.hms_backend.service.AssetService;
 import net.java.hms_backend.service.AuditLogService;
+import net.java.hms_backend.service.NotificationService;
 import org.springframework.data.domain.*;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -30,6 +31,7 @@ public class AssetServiceImpl implements AssetService {
     private final AssetRepository assetRepository;
     private final RoomRepository roomRepository;
     private final AuditLogService auditLogService;
+    private final NotificationService notificationService;
 
     @Override
     public AssetDto createAsset(AssetDto dto) {
@@ -192,6 +194,16 @@ public class AssetServiceImpl implements AssetService {
                 "Asset",
                 asset.getId(),
                 details
+        );
+
+        String title = "Asset Deleted";
+        String message = "User " + username + " deleted asset: " + asset.getName() +
+                " (ID: " + asset.getId() + ", Category: " + asset.getCategory() + ")";
+
+        notificationService.notifyAdminsAndManagers(
+                "ASSET_DELETED",
+                title,
+                message
         );
 
         assetRepository.delete(asset);

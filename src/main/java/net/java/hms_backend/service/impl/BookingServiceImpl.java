@@ -340,6 +340,18 @@ public class BookingServiceImpl implements BookingService {
                 booking.getId(),
                 details
         );
+
+        String title = "Booking Deleted";
+        String message = "User " + username + " deleted booking #" + booking.getId() +
+                " for guest " + booking.getGuestFullName() +
+                " (Room: " + (booking.getRoom() != null ? booking.getRoom().getRoomNumber() : "N/A") + ")";
+
+        notificationService.notifyAdminsAndManagers(
+                "BOOKING_DELETED",
+                title,
+                message
+        );
+
         bookingRepository.delete(booking);
     }
 

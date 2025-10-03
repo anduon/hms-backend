@@ -14,6 +14,7 @@ import net.java.hms_backend.mapper.UserMapper;
 import net.java.hms_backend.repository.RoleRepository;
 import net.java.hms_backend.repository.UserRepository;
 import net.java.hms_backend.service.AuditLogService;
+import net.java.hms_backend.service.NotificationService;
 import net.java.hms_backend.service.UserService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -25,6 +26,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -34,6 +36,7 @@ public class UserServiceImpl implements UserService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuditLogService auditLogService;
+    private final NotificationService notificationService;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -70,6 +73,18 @@ public class UserServiceImpl implements UserService {
                 savedUser.getId(),
                 details
         );
+
+        String title = "New User Created";
+        String message = "User " + username + " created a new account: " + savedUser.getFullName() +
+                " (Email: " + savedUser.getEmail() + ", Roles: " +
+                savedUser.getRoles().stream().map(Role::getName).collect(Collectors.joining(", ")) + ")";
+
+        notificationService.notifyAdminsAndManagers(
+                "USER_CREATED",
+                title,
+                message
+        );
+
 
         return UserMapper.toDto(savedUser);
     }
@@ -201,6 +216,17 @@ public class UserServiceImpl implements UserService {
                 "User",
                 user.getId(),
                 details
+        );
+
+        String title = "User Deleted";
+        String message = "User " + username + " deleted account: " + user.getFullName() +
+                " (Email: " + user.getEmail() + ", Roles: " +
+                user.getRoles().stream().map(Role::getName).collect(Collectors.joining(", ")) + ")";
+
+        notificationService.notifyAdminsAndManagers(
+                "USER_DELETED",
+                title,
+                message
         );
 
         userRepository.deleteById(id);

@@ -16,10 +16,7 @@ import net.java.hms_backend.exception.ResourceNotFoundException;
 import net.java.hms_backend.mapper.InvoiceMapper;
 import net.java.hms_backend.repository.BookingRepository;
 import net.java.hms_backend.repository.InvoiceRepository;
-import net.java.hms_backend.service.AuditLogService;
-import net.java.hms_backend.service.HotelInfoService;
-import net.java.hms_backend.service.InvoiceService;
-import net.java.hms_backend.service.PromotionService;
+import net.java.hms_backend.service.*;
 import org.springframework.data.domain.*;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -48,6 +45,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     private final HotelInfoService hotelInfoService;
     private final PromotionService promotionService;
     private final AuditLogService auditLogService;
+    private final NotificationService notificationService;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -288,6 +286,17 @@ public class InvoiceServiceImpl implements InvoiceService {
                 invoice.getId(),
                 details
         );
+
+        String title = "Invoice Deleted";
+        String message = "User " + username + " deleted invoice #" + invoice.getId() +
+                " (Amount: " + invoice.getAmount() + ", Status: " + invoice.getStatus() + ")";
+
+        notificationService.notifyAdminsAndManagers(
+                "INVOICE_DELETED",
+                title,
+                message
+        );
+
         invoiceRepository.delete(invoice);
     }
 

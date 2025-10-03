@@ -13,6 +13,7 @@ import net.java.hms_backend.exception.RoomException;
 import net.java.hms_backend.mapper.RoomMapper;
 import net.java.hms_backend.repository.RoomRepository;
 import net.java.hms_backend.service.AuditLogService;
+import net.java.hms_backend.service.NotificationService;
 import net.java.hms_backend.service.PromotionService;
 import net.java.hms_backend.service.RoomService;
 import org.springframework.data.domain.*;
@@ -34,9 +35,10 @@ import jakarta.persistence.criteria.*;
 @AllArgsConstructor
 public class RoomServiceImpl implements RoomService {
 
-    private RoomRepository roomRepository;
+    private final RoomRepository roomRepository;
     private final PromotionService promotionService;
     private final AuditLogService auditLogService;
+    private final NotificationService notificationService;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -212,6 +214,17 @@ public class RoomServiceImpl implements RoomService {
                 room.getId(),
                 details
         );
+
+        String title = "Room Deleted";
+        String message = "User " + username + " deleted room " + room.getRoomNumber() +
+                " (Type: " + room.getRoomType() + ", Location: " + room.getLocation() + ")";
+
+        notificationService.notifyAdminsAndManagers(
+                "ROOM_DELETED",
+                title,
+                message
+        );
+
         roomRepository.delete(room);
     }
 
