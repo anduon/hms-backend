@@ -73,5 +73,11 @@ public class NotificationServiceImpl implements NotificationService {
         }
     }
 
+    public void notifyReceptionists(String type, String title, String message) {
+        List<User> recipients = userRepository.findByRoles_Name("RECEPTIONIST");
+        for (User user : recipients) {
+            sendNotification(user, type, title, message);
+        }
+    }
 }
 

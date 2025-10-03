@@ -5,6 +5,7 @@ import net.java.hms_backend.config.JwtUtil;
 import net.java.hms_backend.dto.UserDto;
 import net.java.hms_backend.entity.Role;
 import net.java.hms_backend.entity.User;
+import net.java.hms_backend.repository.NotificationRepository;
 import net.java.hms_backend.repository.RoleRepository;
 import net.java.hms_backend.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,6 +36,7 @@ class UserControllerTest {
     @Autowired private UserRepository userRepository;
     @Autowired private RoleRepository roleRepository;
     @Autowired private PasswordEncoder passwordEncoder;
+    @Autowired private NotificationRepository notificationRepository;
 
     private String adminToken;
     private String receptionistToken;
@@ -42,6 +44,7 @@ class UserControllerTest {
 
     @BeforeEach
     void setup() {
+        notificationRepository.deleteAll();
         userRepository.deleteAll();
         roleRepository.deleteAll();
 

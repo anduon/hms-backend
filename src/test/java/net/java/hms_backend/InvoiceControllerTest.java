@@ -36,6 +36,7 @@ class InvoiceControllerTest {
     @Autowired private BookingRepository bookingRepository;
     @Autowired private RoomRepository roomRepository;
     @Autowired private InvoiceRepository invoiceRepository;
+    @Autowired private NotificationRepository notificationRepository;
 
     private String adminToken;
     private String receptionistToken;
@@ -43,6 +44,7 @@ class InvoiceControllerTest {
 
     @BeforeEach
     void setup() {
+        notificationRepository.deleteAll();
         invoiceRepository.deleteAll();
         bookingRepository.deleteAll();
         roomRepository.deleteAll();

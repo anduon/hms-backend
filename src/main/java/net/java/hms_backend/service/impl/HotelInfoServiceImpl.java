@@ -105,13 +105,10 @@ public class HotelInfoServiceImpl implements HotelInfoService {
                 changes.toString()
         );
 
-        String title = "Hotel Information Updated";
-        String message = "User " + username + " updated hotel information. Changes: " + changes;
-
         notificationService.notifyAdminsAndManagers(
                 "HOTEL_INFO_UPDATED",
-                title,
-                message
+                "Hotel Information Updated",
+                "User " + username + " updated hotel information."
         );
 
         return HotelInfoMapper.toDto(saved);

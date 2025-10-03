@@ -469,8 +469,6 @@ public class BookingServiceImpl implements BookingService {
 
         if (upcomingBookings.isEmpty()) return;
 
-        List<User> receptionists = userRepository.findByRoles_Name("RECEPTIONIST");
-
         for (Booking booking : upcomingBookings) {
             Room room = booking.getRoom();
             if (room == null) {
@@ -484,14 +482,11 @@ public class BookingServiceImpl implements BookingService {
                     booking.getCheckOutDate().format(DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy"))
             );
 
-            for (User receptionist : receptionists) {
-                notificationService.sendNotification(
-                        receptionist,
-                        "ROOM_CHECKOUT_REMINDER",
-                        title,
-                        message
-                );
-            }
+            notificationService.notifyReceptionists(
+                    "ROOM_CHECKOUT_REMINDER",
+                    title,
+                    message
+            );
         }
     }
 

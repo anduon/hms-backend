@@ -20,4 +20,6 @@ public interface NotificationService {
 
     void notifyAdminsAndManagers(String type, String title, String message);
 
+    void notifyReceptionists(String type, String title, String message);
+
 }
