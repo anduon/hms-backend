@@ -13,21 +13,26 @@ import net.java.hms_backend.dto.BookingFilterRequest;
 import net.java.hms_backend.entity.Booking;
 import net.java.hms_backend.entity.PriceType;
 import net.java.hms_backend.entity.Room;
+import net.java.hms_backend.entity.User;
 import net.java.hms_backend.exception.BookingException;
 import net.java.hms_backend.exception.ResourceNotFoundException;
 import net.java.hms_backend.mapper.BookingMapper;
 import net.java.hms_backend.repository.BookingRepository;
 import net.java.hms_backend.repository.InvoiceRepository;
 import net.java.hms_backend.repository.RoomRepository;
+import net.java.hms_backend.repository.UserRepository;
 import net.java.hms_backend.service.AuditLogService;
 import net.java.hms_backend.service.BookingService;
+import net.java.hms_backend.service.NotificationService;
 import org.springframework.data.domain.*;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-
 
 @Service
 @AllArgsConstructor
@@ -37,6 +42,8 @@ public class BookingServiceImpl implements BookingService {
     private final RoomRepository roomRepository;
     private final AuditLogService auditLogService;
     private final InvoiceRepository invoiceRepository;
+    private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -439,4 +446,41 @@ public class BookingServiceImpl implements BookingService {
 
         return predicates;
     }
+
+    @Scheduled(fixedRate = 3600000)
+    @Override
+    public void notifyRoomsAboutUpcomingCheckout() {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime threshold = now.plusMonths(1);
+
+        List<Booking> upcomingBookings = bookingRepository.findByCheckOutDateBetween(now, threshold);
+
+        if (upcomingBookings.isEmpty()) return;
+
+        List<User> receptionists = userRepository.findByRoles_Name("RECEPTIONIST");
+
+        for (Booking booking : upcomingBookings) {
+            Room room = booking.getRoom();
+            if (room == null) {
+                continue;
+            }
+
+            String title = "Upcoming Room Checkout";
+            String message = String.format(
+                    "Room %s is scheduled to check out at %s",
+                    room.getRoomNumber(),
+                    booking.getCheckOutDate().format(DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy"))
+            );
+
+            for (User receptionist : receptionists) {
+                notificationService.sendNotification(
+                        receptionist,
+                        "ROOM_CHECKOUT_REMINDER",
+                        title,
+                        message
+                );
+            }
+        }
+    }
+
 }

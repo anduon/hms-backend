@@ -3,10 +3,12 @@ package net.java.hms_backend;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import io.github.cdimascio.dotenv.Dotenv;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 import java.util.Objects;
 
 @SpringBootApplication
+@EnableScheduling
 public class HmsBackendApplication {
 
 	public static void main(String[] args) {
