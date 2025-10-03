@@ -451,7 +451,7 @@ public class BookingServiceImpl implements BookingService {
     @Override
     public void notifyRoomsAboutUpcomingCheckout() {
         LocalDateTime now = LocalDateTime.now();
-        LocalDateTime threshold = now.plusMonths(1);
+        LocalDateTime threshold = now.plusHours(1);
 
         List<Booking> upcomingBookings = bookingRepository.findByCheckOutDateBetween(now, threshold);
 
