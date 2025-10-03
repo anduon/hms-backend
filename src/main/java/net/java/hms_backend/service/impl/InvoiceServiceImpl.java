@@ -16,10 +16,12 @@ import net.java.hms_backend.exception.ResourceNotFoundException;
 import net.java.hms_backend.mapper.InvoiceMapper;
 import net.java.hms_backend.repository.BookingRepository;
 import net.java.hms_backend.repository.InvoiceRepository;
+import net.java.hms_backend.service.AuditLogService;
 import net.java.hms_backend.service.HotelInfoService;
 import net.java.hms_backend.service.InvoiceService;
 import net.java.hms_backend.service.PromotionService;
 import org.springframework.data.domain.*;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
@@ -45,6 +47,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     private final BookingRepository bookingRepository;
     private final HotelInfoService hotelInfoService;
     private final PromotionService promotionService;
+    private final AuditLogService auditLogService;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -99,6 +102,26 @@ public class InvoiceServiceImpl implements InvoiceService {
 
         Invoice savedInvoice = invoiceRepository.save(invoice);
 
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        String details = "Created invoice: bookingId=" + booking.getId() +
+                ", guest=" + booking.getGuestFullName() +
+                ", roomNumber=" + room.getRoomNumber() +
+                ", bookingType=" + booking.getBookingType() +
+                ", issuedDate=" + invoice.getIssuedDate() +
+                ", dueDate=" + invoice.getDueDate() +
+                ", amount=" + invoice.getAmount() +
+                ", paidAmount=" + invoice.getPaidAmount() +
+                ", status=" + invoice.getStatus() +
+                ", paymentMethod=" + invoice.getPaymentMethod();
+
+        auditLogService.log(
+                username,
+                "CREATE",
+                "Invoice",
+                savedInvoice.getId(),
+                details
+        );
+
         return InvoiceMapper.mapToInvoiceDto(savedInvoice);
     }
 
@@ -106,6 +129,22 @@ public class InvoiceServiceImpl implements InvoiceService {
     public InvoiceDto getInvoiceById(Long id) {
         Invoice invoice = invoiceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Invoice", "id", id));
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        String details = "Viewed invoice with ID: " + id +
+                ", bookingId=" + invoice.getBooking().getId() +
+                ", amount=" + invoice.getAmount() +
+                ", paidAmount=" + invoice.getPaidAmount() +
+                ", status=" + invoice.getStatus() +
+                ", issuedDate=" + invoice.getIssuedDate();
+
+        auditLogService.log(
+                username,
+                "READ",
+                "Invoice",
+                id,
+                details
+        );
         return InvoiceMapper.mapToInvoiceDto(invoice);
     }
 
@@ -113,6 +152,19 @@ public class InvoiceServiceImpl implements InvoiceService {
     public Page<InvoiceDto> getAllInvoices(int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
         Page<Invoice> invoicesPage = invoiceRepository.findAll(pageable);
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        String details = "Viewed invoice list - page: " + page +
+                ", size: " + size +
+                ", total invoices: " + invoicesPage.getTotalElements();
+
+        auditLogService.log(
+                username,
+                "READ",
+                "Invoice",
+                null,
+                details
+        );
         return invoicesPage.map(InvoiceMapper::mapToInvoiceDto);
     }
 
@@ -122,11 +174,15 @@ public class InvoiceServiceImpl implements InvoiceService {
         Invoice invoice = invoiceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Invoice", "id", id));
 
+        StringBuilder changes = new StringBuilder("Updated invoice ID: " + id + ". Changes: ");
+
         if (invoiceDto.getBookingId() != null &&
                 (invoice.getBooking() == null || !invoiceDto.getBookingId().equals(invoice.getBooking().getId()))) {
 
             Booking booking = bookingRepository.findById(invoiceDto.getBookingId())
                     .orElseThrow(() -> new ResourceNotFoundException("Booking", "id", invoiceDto.getBookingId()));
+            changes.append("bookingId: ").append(invoice.getBooking() != null ? invoice.getBooking().getId() : "null")
+                    .append(" → ").append(invoiceDto.getBookingId()).append("; ");
             invoice.setBooking(booking);
 
             Room room = booking.getRoom();
@@ -155,44 +211,83 @@ public class InvoiceServiceImpl implements InvoiceService {
                 double hours = Math.ceil(durationInMinutes / 60.0);
                 amount = BigDecimal.valueOf(basePrice * hours);
             } else {
-                long days = (long) Math.ceil(Duration.between(start, end).toMinutes() / 1440.0);
+                long days = (long) Math.ceil(durationInMinutes / 1440.0);
                 if (days <= 0) days = 1;
                 amount = BigDecimal.valueOf(basePrice * days);
             }
 
             amount = amount.setScale(0, RoundingMode.HALF_UP);
+            changes.append("amount recalculated → ").append(amount).append("; ");
             invoice.setAmount(amount);
         }
 
-        if (invoiceDto.getPaidAmount() != null) {
+        if (invoiceDto.getPaidAmount() != null && !invoiceDto.getPaidAmount().equals(invoice.getPaidAmount())) {
+            changes.append("paidAmount: ").append(invoice.getPaidAmount()).append(" → ").append(invoiceDto.getPaidAmount()).append("; ");
             invoice.setPaidAmount(invoiceDto.getPaidAmount());
         }
-        if (invoiceDto.getStatus() != null) {
+
+        if (invoiceDto.getStatus() != null && !invoiceDto.getStatus().equals(invoice.getStatus())) {
+            changes.append("status: ").append(invoice.getStatus()).append(" → ").append(invoiceDto.getStatus()).append("; ");
             invoice.setStatus(invoiceDto.getStatus());
         }
-        if (invoiceDto.getIssuedDate() != null) {
+
+        if (invoiceDto.getIssuedDate() != null && !invoiceDto.getIssuedDate().equals(invoice.getIssuedDate())) {
+            changes.append("issuedDate: ").append(invoice.getIssuedDate()).append(" → ").append(invoiceDto.getIssuedDate()).append("; ");
             invoice.setIssuedDate(invoiceDto.getIssuedDate());
         }
-        if (invoiceDto.getDueDate() != null) {
+
+        if (invoiceDto.getDueDate() != null && !invoiceDto.getDueDate().equals(invoice.getDueDate())) {
+            changes.append("dueDate: ").append(invoice.getDueDate()).append(" → ").append(invoiceDto.getDueDate()).append("; ");
             invoice.setDueDate(invoiceDto.getDueDate());
         }
-        if (invoiceDto.getPaymentMethod() != null) {
+
+        if (invoiceDto.getPaymentMethod() != null && !invoiceDto.getPaymentMethod().equals(invoice.getPaymentMethod())) {
+            changes.append("paymentMethod: ").append(invoice.getPaymentMethod()).append(" → ").append(invoiceDto.getPaymentMethod()).append("; ");
             invoice.setPaymentMethod(invoiceDto.getPaymentMethod());
         }
-        if (invoiceDto.getNotes() != null) {
+
+        if (invoiceDto.getNotes() != null && !invoiceDto.getNotes().equals(invoice.getNotes())) {
+            changes.append("notes: ").append(invoice.getNotes()).append(" → ").append(invoiceDto.getNotes()).append("; ");
             invoice.setNotes(invoiceDto.getNotes());
         }
 
         Invoice updatedInvoice = invoiceRepository.save(invoice);
+
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        auditLogService.log(
+                username,
+                "UPDATE",
+                "Invoice",
+                updatedInvoice.getId(),
+                changes.toString()
+        );
+
         return InvoiceMapper.mapToInvoiceDto(updatedInvoice);
     }
-
-
 
     @Override
     public void deleteInvoice(Long id) {
         Invoice invoice = invoiceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Invoice", "id", id));
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        String details = "Deleted invoice with ID: " + invoice.getId() +
+                ", bookingId=" + (invoice.getBooking() != null ? invoice.getBooking().getId() : "null") +
+                ", amount=" + invoice.getAmount() +
+                ", paidAmount=" + invoice.getPaidAmount() +
+                ", status=" + invoice.getStatus() +
+                ", issuedDate=" + invoice.getIssuedDate() +
+                ", dueDate=" + invoice.getDueDate() +
+                ", paymentMethod=" + invoice.getPaymentMethod();
+
+        auditLogService.log(
+                username,
+                "DELETE",
+                "Invoice",
+                invoice.getId(),
+                details
+        );
         invoiceRepository.delete(invoice);
     }
 
@@ -206,6 +301,7 @@ public class InvoiceServiceImpl implements InvoiceService {
 
         List<Predicate> predicates = buildPredicates(filter, cb, invoice);
         query.where(cb.and(predicates.toArray(new Predicate[0])));
+        query.orderBy(cb.desc(invoice.get("id")));
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
 
@@ -223,6 +319,47 @@ public class InvoiceServiceImpl implements InvoiceService {
         Long total = entityManager.createQuery(countQuery).getSingleResult();
 
         Page<Invoice> invoicePage = new PageImpl<>(result, pageable, total);
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        StringBuilder details = new StringBuilder("Filtered invoices with criteria: ");
+
+        if (filter.getMinAmount() != null) {
+            details.append("minAmount=").append(filter.getMinAmount()).append("; ");
+        }
+        if (filter.getMaxAmount() != null) {
+            details.append("maxAmount=").append(filter.getMaxAmount()).append("; ");
+        }
+        if (filter.getStatus() != null) {
+            details.append("status=").append(filter.getStatus()).append("; ");
+        }
+        if (filter.getIssuedDateFrom() != null) {
+            details.append("issuedDateFrom=").append(filter.getIssuedDateFrom()).append("; ");
+        }
+        if (filter.getIssuedDateTo() != null) {
+            details.append("issuedDateTo=").append(filter.getIssuedDateTo()).append("; ");
+        }
+        if (filter.getDueDateFrom() != null) {
+            details.append("dueDateFrom=").append(filter.getDueDateFrom()).append("; ");
+        }
+        if (filter.getDueDateTo() != null) {
+            details.append("dueDateTo=").append(filter.getDueDateTo()).append("; ");
+        }
+        if (filter.getPaymentMethod() != null) {
+            details.append("paymentMethod=").append(filter.getPaymentMethod()).append("; ");
+        }
+        if (filter.getBookingId() != null) {
+            details.append("bookingId=").append(filter.getBookingId()).append("; ");
+        }
+
+        details.append("Page=").append(page).append(", Size=").append(size)
+                .append(", TotalResults=").append(total);
+
+        auditLogService.log(
+                username,
+                "FILTER",
+                "Invoice",
+                null,
+                details.toString()
+        );
         return invoicePage.map(InvoiceMapper::mapToInvoiceDto);
     }
 
@@ -359,6 +496,26 @@ public class InvoiceServiceImpl implements InvoiceService {
             document.add(new Paragraph("Xin cam on Quy khach da su dung dich vu cua chung toi!", hotelFont));
 
             document.close();
+
+            String username = SecurityContextHolder.getContext().getAuthentication().getName();
+
+            StringBuilder details = new StringBuilder("Generated PDF for invoice ID: ")
+                    .append(invoice.getId())
+                    .append(", Booking ID: ").append(booking.getId())
+                    .append(", Guest: ").append(booking.getGuestFullName())
+                    .append(", Room: ").append(booking.getRoom().getRoomNumber())
+                    .append(", Status: ").append(invoice.getStatus())
+                    .append(", Issued Date: ").append(invoice.getIssuedDate())
+                    .append(", Amount: ").append(invoice.getAmount().toPlainString());
+
+            auditLogService.log(
+                    username,
+                    "GENERATE_PDF",
+                    "Invoice",
+                    invoice.getId(),
+                    details.toString()
+            );
+
             return out.toByteArray();
 
         } catch (Exception e) {

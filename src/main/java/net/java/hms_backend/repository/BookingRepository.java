@@ -13,12 +13,17 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     @Query("SELECT b FROM Booking b " +
             "WHERE b.room.id = :roomId " +
             "AND b.checkInDate <= :newCheckOut " +
-            "AND b.checkOutDate >= :newCheckIn")
+            "AND (" +
+            "     (b.actualCheckOutTime IS NULL AND b.checkOutDate >= :newCheckIn) " +
+            "     OR " +
+            "     (b.actualCheckOutTime IS NOT NULL AND b.actualCheckOutTime >= :newCheckIn)" +
+            ")")
     List<Booking> findOverlappingBookings(
             @Param("roomId") Long roomId,
             @Param("newCheckIn") LocalDateTime newCheckIn,
             @Param("newCheckOut") LocalDateTime newCheckOut
     );
+
 
     Long countByStatus(String status);
 

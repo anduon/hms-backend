@@ -17,9 +17,12 @@ import net.java.hms_backend.exception.BookingException;
 import net.java.hms_backend.exception.ResourceNotFoundException;
 import net.java.hms_backend.mapper.BookingMapper;
 import net.java.hms_backend.repository.BookingRepository;
+import net.java.hms_backend.repository.InvoiceRepository;
 import net.java.hms_backend.repository.RoomRepository;
+import net.java.hms_backend.service.AuditLogService;
 import net.java.hms_backend.service.BookingService;
 import org.springframework.data.domain.*;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -32,6 +35,8 @@ public class BookingServiceImpl implements BookingService {
 
     private final BookingRepository bookingRepository;
     private final RoomRepository roomRepository;
+    private final AuditLogService auditLogService;
+    private final InvoiceRepository invoiceRepository;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -101,6 +106,28 @@ public class BookingServiceImpl implements BookingService {
 
         Booking booking = BookingMapper.toEntity(dto, room);
         Booking saved = bookingRepository.save(booking);
+
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        String details = "Created booking for guest: " + dto.getGuestFullName() +
+                ", ID number: " + dto.getGuestIdNumber() +
+                ", nationality: " + dto.getGuestNationality() +
+                ", roomNumber: " + dto.getRoomNumber() +
+                ", checkIn: " + dto.getCheckInDate() +
+                ", checkOut: " + dto.getCheckOutDate() +
+                ", bookingType: " + dto.getBookingType() +
+                ", status: " + dto.getStatus() +
+                ", numberOfGuests: " + dto.getNumberOfGuests() +
+                (dto.getNotes() != null ? ", notes: " + dto.getNotes() : "");
+
+        auditLogService.log(
+                username,
+                "CREATE",
+                "Booking",
+                saved.getId(),
+                details
+        );
+
         return BookingMapper.toDto(saved);
     }
 
@@ -110,6 +137,21 @@ public class BookingServiceImpl implements BookingService {
     public BookingDto getBookingById(Long id) {
         Booking booking = bookingRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking", "id", id));
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        String details = "Viewed booking with ID: " + id +
+                ", guest: " + booking.getGuestFullName() +
+                ", roomNumber: " + (booking.getRoom() != null ? booking.getRoom().getRoomNumber() : "null") +
+                ", checkIn: " + booking.getCheckInDate() +
+                ", checkOut: " + booking.getCheckOutDate();
+
+        auditLogService.log(
+                username,
+                "READ",
+                "Booking",
+                id,
+                details
+        );
         return BookingMapper.toDto(booking);
     }
 
@@ -117,6 +159,19 @@ public class BookingServiceImpl implements BookingService {
     public Page<BookingDto> getAllBookings(int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
         Page<Booking> bookingsPage = bookingRepository.findAll(pageable);
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        String details = "Viewed booking list - page: " + page +
+                ", size: " + size +
+                ", total bookings: " + bookingsPage.getTotalElements();
+
+        auditLogService.log(
+                username,
+                "READ",
+                "Booking",
+                null,
+                details
+        );
         return bookingsPage.map(BookingMapper::toDto);
     }
 
@@ -125,9 +180,13 @@ public class BookingServiceImpl implements BookingService {
         Booking booking = bookingRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking", "id", id));
 
+        StringBuilder changes = new StringBuilder("Updated booking ID: " + id + ". Changes: ");
+
         if (dto.getRoomNumber() != null && !dto.getRoomNumber().equals(booking.getRoom().getRoomNumber())) {
             Room room = roomRepository.findByRoomNumber(dto.getRoomNumber())
                     .orElseThrow(() -> new ResourceNotFoundException("Room", "roomNumber", dto.getRoomNumber()));
+            changes.append("roomNumber: ").append(booking.getRoom().getRoomNumber())
+                    .append(" → ").append(dto.getRoomNumber()).append("; ");
             booking.setRoom(room);
         }
 
@@ -149,8 +208,17 @@ public class BookingServiceImpl implements BookingService {
                 throw new BookingException.BookingConflictException("Room is already booked during the requested period.");
             }
 
-            booking.setCheckInDate(dto.getCheckInDate());
-            booking.setCheckOutDate(dto.getCheckOutDate());
+            if (!dto.getCheckInDate().equals(booking.getCheckInDate())) {
+                changes.append("checkInDate: ").append(booking.getCheckInDate())
+                        .append(" → ").append(dto.getCheckInDate()).append("; ");
+                booking.setCheckInDate(dto.getCheckInDate());
+            }
+
+            if (!dto.getCheckOutDate().equals(booking.getCheckOutDate())) {
+                changes.append("checkOutDate: ").append(booking.getCheckOutDate())
+                        .append(" → ").append(dto.getCheckOutDate()).append("; ");
+                booking.setCheckOutDate(dto.getCheckOutDate());
+            }
         }
 
         if (dto.getGuestFullName() != null && dto.getGuestFullName().isBlank()) {
@@ -166,27 +234,105 @@ public class BookingServiceImpl implements BookingService {
             throw new BookingException.MissingStatusException();
         }
 
-        if (dto.getGuestFullName() != null) booking.setGuestFullName(dto.getGuestFullName());
-        if (dto.getGuestIdNumber() != null) booking.setGuestIdNumber(dto.getGuestIdNumber());
-        if (dto.getGuestNationality() != null) booking.setGuestNationality(dto.getGuestNationality());
-        if (dto.getActualCheckInTime() != null) booking.setActualCheckInTime(dto.getActualCheckInTime());
-        if (dto.getActualCheckOutTime() != null) booking.setActualCheckOutTime(dto.getActualCheckOutTime());
-        if (dto.getBookingType() != null) booking.setBookingType(dto.getBookingType());
-        if (dto.getStatus() != null) booking.setStatus(dto.getStatus());
-        if (dto.getNumberOfGuests() != null) booking.setNumberOfGuests(dto.getNumberOfGuests());
-        if (dto.getNotes() != null) booking.setNotes(dto.getNotes());
-        if (dto.getCancelReason() != null) booking.setCancelReason(dto.getCancelReason());
+        if (dto.getGuestFullName() != null && !dto.getGuestFullName().equals(booking.getGuestFullName())) {
+            changes.append("guestFullName: ").append(booking.getGuestFullName())
+                    .append(" → ").append(dto.getGuestFullName()).append("; ");
+            booking.setGuestFullName(dto.getGuestFullName());
+        }
+
+        if (dto.getGuestIdNumber() != null && !dto.getGuestIdNumber().equals(booking.getGuestIdNumber())) {
+            changes.append("guestIdNumber: ").append(booking.getGuestIdNumber())
+                    .append(" → ").append(dto.getGuestIdNumber()).append("; ");
+            booking.setGuestIdNumber(dto.getGuestIdNumber());
+        }
+
+        if (dto.getGuestNationality() != null && !dto.getGuestNationality().equals(booking.getGuestNationality())) {
+            changes.append("guestNationality: ").append(booking.getGuestNationality())
+                    .append(" → ").append(dto.getGuestNationality()).append("; ");
+            booking.setGuestNationality(dto.getGuestNationality());
+        }
+
+        if (dto.getActualCheckInTime() != null && !dto.getActualCheckInTime().equals(booking.getActualCheckInTime())) {
+            changes.append("actualCheckInTime: ").append(booking.getActualCheckInTime())
+                    .append(" → ").append(dto.getActualCheckInTime()).append("; ");
+            booking.setActualCheckInTime(dto.getActualCheckInTime());
+        }
+
+        if (dto.getActualCheckOutTime() != null && !dto.getActualCheckOutTime().equals(booking.getActualCheckOutTime())) {
+            changes.append("actualCheckOutTime: ").append(booking.getActualCheckOutTime())
+                    .append(" → ").append(dto.getActualCheckOutTime()).append("; ");
+            booking.setActualCheckOutTime(dto.getActualCheckOutTime());
+        }
+
+        if (dto.getBookingType() != null && !dto.getBookingType().equals(booking.getBookingType())) {
+            changes.append("bookingType: ").append(booking.getBookingType())
+                    .append(" → ").append(dto.getBookingType()).append("; ");
+            booking.setBookingType(dto.getBookingType());
+        }
+
+        if (dto.getStatus() != null && !dto.getStatus().equals(booking.getStatus())) {
+            changes.append("status: ").append(booking.getStatus())
+                    .append(" → ").append(dto.getStatus()).append("; ");
+            booking.setStatus(dto.getStatus());
+        }
+
+        if (dto.getNumberOfGuests() != null && dto.getNumberOfGuests() != booking.getNumberOfGuests()) {
+            changes.append("numberOfGuests: ").append(booking.getNumberOfGuests())
+                    .append(" → ").append(dto.getNumberOfGuests()).append("; ");
+            booking.setNumberOfGuests(dto.getNumberOfGuests());
+        }
+
+        if (dto.getNotes() != null && !dto.getNotes().equals(booking.getNotes())) {
+            changes.append("notes: ").append(booking.getNotes())
+                    .append(" → ").append(dto.getNotes()).append("; ");
+            booking.setNotes(dto.getNotes());
+        }
+
+        if (dto.getCancelReason() != null && !dto.getCancelReason().equals(booking.getCancelReason())) {
+            changes.append("cancelReason: ").append(booking.getCancelReason())
+                    .append(" → ").append(dto.getCancelReason()).append("; ");
+            booking.setCancelReason(dto.getCancelReason());
+        }
 
         Booking updatedBooking = bookingRepository.save(booking);
+
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        auditLogService.log(
+                username,
+                "UPDATE",
+                "Booking",
+                updatedBooking.getId(),
+                changes.toString()
+        );
+
         return BookingMapper.toDto(updatedBooking);
     }
-
-
 
     @Override
     public void deleteBooking(Long id) {
         Booking booking = bookingRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking", "id", id));
+        if (invoiceRepository.existsByBookingId(id)) {
+            throw new BookingException.BookingHasInvoiceException(id);
+        }
+
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        String details = "Deleted booking with ID: " + booking.getId() +
+                ", guest: " + booking.getGuestFullName() +
+                ", roomNumber: " + (booking.getRoom() != null ? booking.getRoom().getRoomNumber() : "null") +
+                ", checkIn: " + booking.getCheckInDate() +
+                ", checkOut: " + booking.getCheckOutDate() +
+                ", status: " + booking.getStatus();
+
+        auditLogService.log(
+                username,
+                "DELETE",
+                "Booking",
+                booking.getId(),
+                details
+        );
         bookingRepository.delete(booking);
     }
 
@@ -200,6 +346,7 @@ public class BookingServiceImpl implements BookingService {
 
         List<Predicate> predicates = buildPredicates(cb, booking, filter);
         query.where(cb.and(predicates.toArray(new Predicate[0])));
+        query.orderBy(cb.desc(booking.get("id")));
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
 
@@ -217,6 +364,30 @@ public class BookingServiceImpl implements BookingService {
         Long total = entityManager.createQuery(countQuery).getSingleResult();
 
         Page<Booking> bookingsPage = new PageImpl<>(result, pageable, total);
+
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        StringBuilder details = new StringBuilder("Filtered bookings with criteria: ");
+        if (filter.getGuestFullName() != null) details.append("guestFullName=").append(filter.getGuestFullName()).append("; ");
+        if (filter.getGuestIdNumber() != null) details.append("guestIdNumber=").append(filter.getGuestIdNumber()).append("; ");
+        if (filter.getGuestNationality() != null) details.append("guestNationality=").append(filter.getGuestNationality()).append("; ");
+        if (filter.getStatus() != null) details.append("status=").append(filter.getStatus()).append("; ");
+        if (filter.getBookingType() != null) details.append("bookingType=").append(filter.getBookingType()).append("; ");
+        if (filter.getCheckInDateFrom() != null) details.append("checkInDateFrom=").append(filter.getCheckInDateFrom()).append("; ");
+        if (filter.getCheckInDateTo() != null) details.append("checkInDateTo=").append(filter.getCheckInDateTo()).append("; ");
+        if (filter.getCheckOutDateFrom() != null) details.append("checkOutDateFrom=").append(filter.getCheckOutDateFrom()).append("; ");
+        if (filter.getCheckOutDateTo() != null) details.append("checkOutDateTo=").append(filter.getCheckOutDateTo()).append("; ");
+        if (filter.getRoomId() != null) details.append("roomNo=").append(filter.getRoomId()).append("; ");
+        details.append("page=").append(page).append(", size=").append(size)
+                .append(", total results=").append(total);
+
+        auditLogService.log(
+                username,
+                "SEARCH",
+                "Booking",
+                null,
+                details.toString()
+        );
         return bookingsPage.map(BookingMapper::toDto);
     }
 
@@ -263,13 +434,9 @@ public class BookingServiceImpl implements BookingService {
         }
 
         if (filter.getRoomId() != null) {
-            predicates.add(cb.equal(root.get("room").get("id"), filter.getRoomId()));
+            predicates.add(cb.equal(root.get("room").get("roomNumber"), filter.getRoomId()));
         }
 
         return predicates;
     }
-
-
-
-
 }

@@ -85,10 +85,12 @@ public class GlobalExceptionHandler {
             BookingException.MissingNumberOfGuestsException.class,
             BookingException.InvalidDateRangeException.class,
             BookingException.InvalidBookingTypeException.class,
-            BookingException.ExceedsRoomCapacityException.class
+            BookingException.ExceedsRoomCapacityException.class,
+            BookingException.BookingHasInvoiceException.class
     })
     public ResponseEntity<Map<String, String>> handleBookingExceptions(BookingException ex) {
         HttpStatus status = ex instanceof BookingException.BookingConflictException
+                || ex instanceof BookingException.BookingHasInvoiceException
                 ? HttpStatus.CONFLICT
                 : HttpStatus.BAD_REQUEST;
 

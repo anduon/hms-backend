@@ -18,9 +18,9 @@ import org.springframework.stereotype.Service;
 public class AuthService {
 
     private final UserRepository userRepository;
-    private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final AuditLogService auditLogService;
 
     public AuthResponse login(LoginRequest request) {
         String email = request.getEmail();
@@ -45,9 +45,17 @@ public class AuthService {
         }
 
         String token = jwtUtil.generateToken(user);
+        String details = "User logged in: [ID=" + user.getId() +
+                ", Email=" + user.getEmail() +
+                ", FullName=" + user.getFullName() + "]";
+
+        auditLogService.log(
+                email,
+                "LOGIN",
+                "User",
+                user.getId(),
+                details
+        );
         return new AuthResponse(token);
     }
-
-
-
 }
