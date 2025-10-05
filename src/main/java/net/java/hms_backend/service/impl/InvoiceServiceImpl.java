@@ -14,6 +14,7 @@ import net.java.hms_backend.entity.*;
 import net.java.hms_backend.exception.InvoiceException;
 import net.java.hms_backend.exception.ResourceNotFoundException;
 import net.java.hms_backend.mapper.InvoiceMapper;
+import net.java.hms_backend.repository.BookingExtraChargeRepository;
 import net.java.hms_backend.repository.BookingRepository;
 import net.java.hms_backend.repository.InvoiceRepository;
 import net.java.hms_backend.service.*;
@@ -46,6 +47,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     private final PromotionService promotionService;
     private final AuditLogService auditLogService;
     private final NotificationService notificationService;
+    private final BookingExtraChargeRepository bookingExtraChargeRepository;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -82,19 +84,27 @@ public class InvoiceServiceImpl implements InvoiceService {
             basePrice *= (1 - discountPercent / 100.0);
         }
 
-        BigDecimal amount;
+        BigDecimal roomAmount;
         if (bookingPriceType == PriceType.HOURLY) {
             double hours = Math.ceil(durationInMinutes / 60.0);
-            amount = BigDecimal.valueOf(basePrice * hours);
+            roomAmount = BigDecimal.valueOf(basePrice * hours);
         } else {
             long days = (long) Math.ceil(Duration.between(start, end).toMinutes() / 1440.0);
             if (days <= 0) days = 1;
-            amount = BigDecimal.valueOf(basePrice * days);
+            roomAmount = BigDecimal.valueOf(basePrice * days);
         }
 
-        amount = amount.setScale(0, RoundingMode.HALF_UP);
+        roomAmount = roomAmount.setScale(0, RoundingMode.HALF_UP);
+
+        List<BookingExtraCharge> extraCharges = bookingExtraChargeRepository.findByBookingId(booking.getId());
+        BigDecimal extraChargeTotal = extraCharges.stream()
+                .map(BookingExtraCharge::getTotalPrice)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal totalAmount = roomAmount.add(extraChargeTotal);
+
         Invoice invoice = InvoiceMapper.mapToInvoice(invoiceDto, booking);
-        invoice.setAmount(amount);
+        invoice.setAmount(totalAmount);
         invoice.setPaidAmount(BigDecimal.ZERO);
         invoice.setIssuedDate(LocalDateTime.now());
 
@@ -204,19 +214,24 @@ public class InvoiceServiceImpl implements InvoiceService {
                 basePrice *= (1 - discountPercent / 100.0);
             }
 
-            BigDecimal amount;
+            BigDecimal roomAmount;
             if (bookingPriceType == PriceType.HOURLY) {
                 double hours = Math.ceil(durationInMinutes / 60.0);
-                amount = BigDecimal.valueOf(basePrice * hours);
+                roomAmount = BigDecimal.valueOf(basePrice * hours);
             } else {
                 long days = (long) Math.ceil(durationInMinutes / 1440.0);
                 if (days <= 0) days = 1;
-                amount = BigDecimal.valueOf(basePrice * days);
+                roomAmount = BigDecimal.valueOf(basePrice * days);
             }
 
-            amount = amount.setScale(0, RoundingMode.HALF_UP);
-            changes.append("amount recalculated → ").append(amount).append("; ");
-            invoice.setAmount(amount);
+            roomAmount = roomAmount.setScale(0, RoundingMode.HALF_UP);
+            List<BookingExtraCharge> extraCharges = bookingExtraChargeRepository.findByBookingId(booking.getId());
+            BigDecimal extraChargeTotal = extraCharges.stream()
+                    .map(BookingExtraCharge::getTotalPrice)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            BigDecimal totalAmount = roomAmount.add(extraChargeTotal);
+            changes.append("amount recalculated → ").append(totalAmount).append("; ");
+            invoice.setAmount(totalAmount);
         }
 
         if (invoiceDto.getPaidAmount() != null && !invoiceDto.getPaidAmount().equals(invoice.getPaidAmount())) {
