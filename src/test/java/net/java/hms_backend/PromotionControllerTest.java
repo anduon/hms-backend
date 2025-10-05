@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import net.java.hms_backend.config.JwtUtil;
 import net.java.hms_backend.dto.PromotionDto;
 import net.java.hms_backend.entity.*;
+import net.java.hms_backend.repository.NotificationRepository;
 import net.java.hms_backend.repository.RoleRepository;
 import net.java.hms_backend.repository.PromotionRepository;
 import net.java.hms_backend.repository.UserRepository;
@@ -37,12 +38,14 @@ class PromotionControllerTest {
     @Autowired private RoleRepository roleRepository;
     @Autowired private PromotionRepository promotionRepository;
     @Autowired private PasswordEncoder passwordEncoder;
+    @Autowired private NotificationRepository notificationRepository;
 
     private String adminToken;
     private String accountantToken;
 
     @BeforeEach
     void setup() {
+        notificationRepository.deleteAll();
         promotionRepository.deleteAll();
         userRepository.deleteAll();
         roleRepository.deleteAll();

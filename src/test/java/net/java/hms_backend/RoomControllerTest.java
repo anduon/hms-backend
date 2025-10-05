@@ -5,10 +5,7 @@ import net.java.hms_backend.config.JwtUtil;
 import net.java.hms_backend.dto.RoomDto;
 import net.java.hms_backend.entity.Role;
 import net.java.hms_backend.entity.User;
-import net.java.hms_backend.repository.BookingRepository;
-import net.java.hms_backend.repository.RoleRepository;
-import net.java.hms_backend.repository.RoomRepository;
-import net.java.hms_backend.repository.UserRepository;
+import net.java.hms_backend.repository.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,6 +43,9 @@ class RoomControllerTest {
     @Autowired
     private BookingRepository bookingRepository;
 
+    @Autowired
+    private NotificationRepository notificationRepository;
+
     private String jwtToken;
     private String accountantToken;
     private RoomDto testRoom;
@@ -61,6 +61,7 @@ class RoomControllerTest {
 
     @BeforeEach
     void setup() {
+        notificationRepository.deleteAll();
         bookingRepository.deleteAll();
         roomRepository.deleteAll();
         userRepository.deleteAll();

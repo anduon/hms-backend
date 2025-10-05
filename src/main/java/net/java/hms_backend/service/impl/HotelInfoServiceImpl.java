@@ -8,6 +8,7 @@ import net.java.hms_backend.mapper.HotelInfoMapper;
 import net.java.hms_backend.repository.HotelInfoRepository;
 import net.java.hms_backend.service.AuditLogService;
 import net.java.hms_backend.service.HotelInfoService;
+import net.java.hms_backend.service.NotificationService;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -17,6 +18,7 @@ public class HotelInfoServiceImpl implements HotelInfoService {
 
     private final HotelInfoRepository hotelInfoRepository;
     private final AuditLogService auditLogService;
+    private final NotificationService notificationService;
 
     @Override
     public HotelInfoDto getHotelInfo() {
@@ -103,8 +105,12 @@ public class HotelInfoServiceImpl implements HotelInfoService {
                 changes.toString()
         );
 
+        notificationService.notifyAdminsAndManagers(
+                "HOTEL_INFO_UPDATED",
+                "Hotel Information Updated",
+                "User " + username + " updated hotel information."
+        );
+
         return HotelInfoMapper.toDto(saved);
     }
-
-
 }

@@ -6,10 +6,7 @@ import net.java.hms_backend.dto.AssetDto;
 import net.java.hms_backend.entity.Role;
 import net.java.hms_backend.entity.Room;
 import net.java.hms_backend.entity.User;
-import net.java.hms_backend.repository.AssetRepository;
-import net.java.hms_backend.repository.RoleRepository;
-import net.java.hms_backend.repository.RoomRepository;
-import net.java.hms_backend.repository.UserRepository;
+import net.java.hms_backend.repository.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,6 +37,7 @@ class AssetControllerTest {
     @Autowired private UserRepository userRepository;
     @Autowired private PasswordEncoder passwordEncoder;
     @Autowired private AssetRepository assetRepository;
+    @Autowired private NotificationRepository notificationRepository;
 
     private String adminToken;
     private String accountantToken;
@@ -47,6 +45,7 @@ class AssetControllerTest {
 
     @BeforeEach
     void setup() {
+        notificationRepository.deleteAll();
         assetRepository.deleteAll();
         roomRepository.deleteAll();
         userRepository.deleteAll();
