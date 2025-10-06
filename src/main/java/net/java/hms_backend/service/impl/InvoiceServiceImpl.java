@@ -107,7 +107,7 @@ public class InvoiceServiceImpl implements InvoiceService {
             }
         } else {
             LocalDate startDate = start.toLocalDate();
-            LocalDate endDate = end.toLocalDate().minusDays(1); // không tính ngày trả phòng
+            LocalDate endDate = end.toLocalDate().minusDays(1);
 
             roomAmount = BigDecimal.ZERO;
             LocalDate current = startDate;
@@ -212,56 +212,6 @@ public class InvoiceServiceImpl implements InvoiceService {
                 .orElseThrow(() -> new ResourceNotFoundException("Invoice", "id", id));
 
         StringBuilder changes = new StringBuilder("Updated invoice ID: " + id + ". Changes: ");
-
-        if (invoiceDto.getBookingId() != null &&
-                (invoice.getBooking() == null || !invoiceDto.getBookingId().equals(invoice.getBooking().getId()))) {
-
-            Booking booking = bookingRepository.findById(invoiceDto.getBookingId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Booking", "id", invoiceDto.getBookingId()));
-            changes.append("bookingId: ").append(invoice.getBooking() != null ? invoice.getBooking().getId() : "null")
-                    .append(" → ").append(invoiceDto.getBookingId()).append("; ");
-            invoice.setBooking(booking);
-
-            Room room = booking.getRoom();
-            PriceType bookingPriceType = PriceType.valueOf(booking.getBookingType());
-
-            RoomPrice roomPrice = room.getPrices().stream()
-                    .filter(p -> p.getPriceType() == bookingPriceType)
-                    .findFirst()
-                    .orElseThrow(() -> new ResourceNotFoundException("RoomPrice", "priceType", bookingPriceType));
-
-            LocalDateTime start = booking.getCheckInDate();
-            LocalDateTime end = booking.getCheckOutDate();
-            long durationInMinutes = Duration.between(start, end).toMinutes();
-            if (durationInMinutes <= 0) durationInMinutes = 60;
-
-            Optional<Promotion> promotionOpt = promotionService.getPromotionForBooking(start, end);
-
-            double basePrice = roomPrice.getBasePrice();
-            if (promotionOpt.isPresent()) {
-                double discountPercent = promotionOpt.get().getDiscountPercent();
-                basePrice *= (1 - discountPercent / 100.0);
-            }
-
-            BigDecimal roomAmount;
-            if (bookingPriceType == PriceType.HOURLY) {
-                double hours = Math.ceil(durationInMinutes / 60.0);
-                roomAmount = BigDecimal.valueOf(basePrice * hours);
-            } else {
-                long days = (long) Math.ceil(durationInMinutes / 1440.0);
-                if (days <= 0) days = 1;
-                roomAmount = BigDecimal.valueOf(basePrice * days);
-            }
-
-            roomAmount = roomAmount.setScale(0, RoundingMode.HALF_UP);
-            List<BookingExtraCharge> extraCharges = bookingExtraChargeRepository.findByBookingId(booking.getId());
-            BigDecimal extraChargeTotal = extraCharges.stream()
-                    .map(BookingExtraCharge::getTotalPrice)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-            BigDecimal totalAmount = roomAmount.add(extraChargeTotal);
-            changes.append("amount recalculated → ").append(totalAmount).append("; ");
-            invoice.setAmount(totalAmount);
-        }
 
         if (invoiceDto.getPaidAmount() != null && !invoiceDto.getPaidAmount().equals(invoice.getPaidAmount())) {
             changes.append("paidAmount: ").append(invoice.getPaidAmount()).append(" → ").append(invoiceDto.getPaidAmount()).append("; ");
@@ -495,13 +445,11 @@ public class InvoiceServiceImpl implements InvoiceService {
             document.add(new Paragraph("Trạng thái: " + invoice.getStatus()));
             document.add(new Paragraph(" "));
 
-            PdfPTable serviceTable = new PdfPTable(4);
+            PdfPTable serviceTable = new PdfPTable(2);
             serviceTable.setWidthPercentage(100);
-            serviceTable.setWidths(new int[]{4, 1, 2, 2});
+            serviceTable.setWidths(new int[]{6, 2});
 
             serviceTable.addCell(new PdfPCell(new Phrase("Dịch vụ")));
-            serviceTable.addCell(new PdfPCell(new Phrase("SL")));
-            serviceTable.addCell(new PdfPCell(new Phrase("Đơn giá")));
             serviceTable.addCell(new PdfPCell(new Phrase("Thành tiền")));
 
             Room room = booking.getRoom();
@@ -512,15 +460,73 @@ public class InvoiceServiceImpl implements InvoiceService {
                     .findFirst()
                     .orElseThrow(() -> new ResourceNotFoundException("RoomPrice", "priceType", bookingPriceType));
 
-            LocalDateTime start = booking.getActualCheckInTime() != null ? booking.getActualCheckInTime() : booking.getCheckInDate();
-            LocalDateTime end = booking.getActualCheckOutTime() != null ? booking.getActualCheckOutTime() : booking.getCheckOutDate();
+            LocalDateTime start = booking.getCheckInDate();
+            LocalDateTime end = booking.getCheckOutDate();
 
-            long nights = java.time.Duration.between(start, end).toDays();
-            BigDecimal amount = BigDecimal.valueOf(roomPrice.getBasePrice() * nights);
-            serviceTable.addCell("Tiền phòng (" + nights + " đêm)");
-            serviceTable.addCell(String.valueOf(nights));
-            serviceTable.addCell(String.valueOf(roomPrice.getBasePrice()));
-            serviceTable.addCell(String.valueOf(amount));
+            long durationInMinutes = Duration.between(start, end).toMinutes();
+            if (durationInMinutes <= 0) durationInMinutes = 60;
+
+            Optional<Promotion> promotionOpt = promotionService.getPromotionForBooking(start, end);
+            double basePrice = roomPrice.getBasePrice();
+            if (promotionOpt.isPresent()) {
+                double discountPercent = promotionOpt.get().getDiscountPercent();
+                basePrice *= (1 - discountPercent / 100.0);
+            }
+
+            BigDecimal roomAmount;
+            if (bookingPriceType == PriceType.HOURLY) {
+                roomAmount = BigDecimal.ZERO;
+
+                LocalDateTime current = start;
+                while (current.isBefore(end)) {
+                    double hourlyPrice = basePrice;
+                    DayOfWeek day = current.getDayOfWeek();
+
+                    if ((day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY)
+                            && hotelInfo.getWeekendSurchargePercent() != null) {
+                        hourlyPrice *= (1 + hotelInfo.getWeekendSurchargePercent() / 100.0);
+                    }
+
+                    roomAmount = roomAmount.add(BigDecimal.valueOf(hourlyPrice));
+                    current = current.plusHours(1);
+                }
+            } else {
+                LocalDate startDate = start.toLocalDate();
+                LocalDate endDate = end.toLocalDate().minusDays(1);
+
+                roomAmount = BigDecimal.ZERO;
+                LocalDate current = startDate;
+                while (!current.isAfter(endDate)) {
+                    double dailyPrice = basePrice;
+                    DayOfWeek day = current.getDayOfWeek();
+                    if ((day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY)
+                            && hotelInfo.getWeekendSurchargePercent() != null) {
+                        dailyPrice *= (1 + hotelInfo.getWeekendSurchargePercent() / 100.0);
+                    }
+                    roomAmount = roomAmount.add(BigDecimal.valueOf(dailyPrice));
+                    current = current.plusDays(1);
+                }
+            }
+
+            roomAmount = roomAmount.setScale(0, RoundingMode.HALF_UP);
+
+            List<BookingExtraCharge> extraCharges = bookingExtraChargeRepository.findByBookingId(booking.getId());
+            BigDecimal extraChargeTotal = extraCharges.stream()
+                    .map(BookingExtraCharge::getTotalPrice)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            BigDecimal totalAmount = roomAmount.add(extraChargeTotal);
+
+            String priceTypeLabel = bookingPriceType == PriceType.HOURLY ? "Tiền phòng (Giá theo giờ)" : "Tiền phòng (Giá theo ngày)";
+            serviceTable.addCell(priceTypeLabel);
+            serviceTable.addCell(roomAmount.setScale(0, RoundingMode.HALF_UP).toPlainString());
+
+            for (BookingExtraCharge charge : extraCharges) {
+                String name = charge.getExtraCharge().getName();
+                BigDecimal totalPrice = charge.getTotalPrice();
+                serviceTable.addCell(name);
+                serviceTable.addCell(totalPrice != null ? totalPrice.toPlainString() : "0");
+            }
 
             document.add(serviceTable);
             document.add(new Paragraph(" "));
@@ -531,7 +537,7 @@ public class InvoiceServiceImpl implements InvoiceService {
             summaryTable.setWidthPercentage(50);
             summaryTable.setHorizontalAlignment(Element.ALIGN_RIGHT);
 
-            summaryTable.addCell("Tổng tiền (chưa VAT)");
+            summaryTable.addCell("Tổng tiền");
             summaryTable.addCell(subTotal.toPlainString());
 
             summaryTable.addCell("Đã thanh toán");
