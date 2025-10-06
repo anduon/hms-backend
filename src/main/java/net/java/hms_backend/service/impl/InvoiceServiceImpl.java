@@ -16,6 +16,7 @@ import net.java.hms_backend.exception.ResourceNotFoundException;
 import net.java.hms_backend.mapper.InvoiceMapper;
 import net.java.hms_backend.repository.BookingExtraChargeRepository;
 import net.java.hms_backend.repository.BookingRepository;
+import net.java.hms_backend.repository.HotelInfoRepository;
 import net.java.hms_backend.repository.InvoiceRepository;
 import net.java.hms_backend.service.*;
 import org.springframework.data.domain.*;
@@ -25,7 +26,9 @@ import org.springframework.stereotype.Service;
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.DayOfWeek;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -48,6 +51,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     private final AuditLogService auditLogService;
     private final NotificationService notificationService;
     private final BookingExtraChargeRepository bookingExtraChargeRepository;
+    private final HotelInfoService hotelInfo;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -86,12 +90,37 @@ public class InvoiceServiceImpl implements InvoiceService {
 
         BigDecimal roomAmount;
         if (bookingPriceType == PriceType.HOURLY) {
-            double hours = Math.ceil(durationInMinutes / 60.0);
-            roomAmount = BigDecimal.valueOf(basePrice * hours);
+            roomAmount = BigDecimal.ZERO;
+
+            LocalDateTime current = start;
+            while (current.isBefore(end)) {
+                double hourlyPrice = basePrice;
+                DayOfWeek day = current.getDayOfWeek();
+
+                if ((day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY)
+                        && hotelInfo.getWeekendSurchargePercent() != null) {
+                    hourlyPrice *= (1 + hotelInfo.getWeekendSurchargePercent() / 100.0);
+                }
+
+                roomAmount = roomAmount.add(BigDecimal.valueOf(hourlyPrice));
+                current = current.plusHours(1);
+            }
         } else {
-            long days = (long) Math.ceil(Duration.between(start, end).toMinutes() / 1440.0);
-            if (days <= 0) days = 1;
-            roomAmount = BigDecimal.valueOf(basePrice * days);
+            LocalDate startDate = start.toLocalDate();
+            LocalDate endDate = end.toLocalDate().minusDays(1); // không tính ngày trả phòng
+
+            roomAmount = BigDecimal.ZERO;
+            LocalDate current = startDate;
+            while (!current.isAfter(endDate)) {
+                double dailyPrice = basePrice;
+                DayOfWeek day = current.getDayOfWeek();
+                if ((day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY)
+                        && hotelInfo.getWeekendSurchargePercent() != null) {
+                    dailyPrice *= (1 + hotelInfo.getWeekendSurchargePercent() / 100.0);
+                }
+                roomAmount = roomAmount.add(BigDecimal.valueOf(dailyPrice));
+                current = current.plusDays(1);
+            }
         }
 
         roomAmount = roomAmount.setScale(0, RoundingMode.HALF_UP);

@@ -15,6 +15,7 @@ public class HotelInfoDto implements AuditDto {
     private Integer numberOfFloors;
     private LocalTime checkInTime;
     private LocalTime checkOutTime;
+    private Double weekendSurchargePercent;
 
     private String createdBy;
     private String updatedBy;

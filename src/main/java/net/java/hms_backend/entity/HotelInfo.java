@@ -27,5 +27,6 @@ public class HotelInfo extends Auditable {
     private Integer numberOfFloors;
     private LocalTime checkInTime;
     private LocalTime checkOutTime;
+    private Double weekendSurchargePercent;
 }
 

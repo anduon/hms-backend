@@ -66,6 +66,7 @@ public class DataInitializer implements CommandLineRunner {
             hotelInfo.setNumberOfFloors(5);
             hotelInfo.setCheckInTime(LocalTime.of(14, 0));
             hotelInfo.setCheckOutTime(LocalTime.of(12, 0));
+            hotelInfo.setWeekendSurchargePercent(10.0);
 
             hotelInfoRepository.save(hotelInfo);
             System.out.println("Default hotel info inserted!");

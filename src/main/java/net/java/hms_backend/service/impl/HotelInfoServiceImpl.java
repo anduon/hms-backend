@@ -3,6 +3,7 @@ package net.java.hms_backend.service.impl;
 import lombok.AllArgsConstructor;
 import net.java.hms_backend.dto.HotelInfoDto;
 import net.java.hms_backend.entity.HotelInfo;
+import net.java.hms_backend.exception.HotelInfoException;
 import net.java.hms_backend.exception.ResourceNotFoundException;
 import net.java.hms_backend.mapper.HotelInfoMapper;
 import net.java.hms_backend.repository.HotelInfoRepository;
@@ -33,7 +34,8 @@ public class HotelInfoServiceImpl implements HotelInfoService {
                 ", taxCode=" + entity.getTaxCode() +
                 ", numberOfFloors=" + entity.getNumberOfFloors() +
                 ", checkInTime=" + entity.getCheckInTime() +
-                ", checkOutTime=" + entity.getCheckOutTime();
+                ", checkOutTime=" + entity.getCheckOutTime() +
+                ", weekendSurchargePercent=" + entity.getWeekendSurchargePercent();
 
         auditLogService.log(
                 username,
@@ -93,6 +95,16 @@ public class HotelInfoServiceImpl implements HotelInfoService {
             entity.setCheckOutTime(dto.getCheckOutTime());
         }
 
+        if (dto.getWeekendSurchargePercent() != null && !dto.getWeekendSurchargePercent().equals(entity.getWeekendSurchargePercent())) {
+            double percent = dto.getWeekendSurchargePercent();
+            if (percent < 0 || percent > 100) {
+                throw new HotelInfoException.InvalidWeekendSurchargeException("Weekend surcharge percent must be between 0 and 100.");
+            }
+            changes.append("weekendSurchargePercent: ").append(entity.getWeekendSurchargePercent()).append(" → ").append(percent).append("; ");
+            entity.setWeekendSurchargePercent(percent);
+        }
+
+
         HotelInfo saved = hotelInfoRepository.save(entity);
 
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -113,4 +125,12 @@ public class HotelInfoServiceImpl implements HotelInfoService {
 
         return HotelInfoMapper.toDto(saved);
     }
+
+    @Override
+    public Double getWeekendSurchargePercent() {
+        return hotelInfoRepository.findTopByOrderByIdAsc()
+                .map(HotelInfo::getWeekendSurchargePercent)
+                .orElse(0.0);
+    }
+
 }

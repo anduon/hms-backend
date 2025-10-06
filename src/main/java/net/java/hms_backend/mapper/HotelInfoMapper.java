@@ -15,6 +15,7 @@ public class HotelInfoMapper {
         dto.setNumberOfFloors(entity.getNumberOfFloors());
         dto.setCheckInTime(entity.getCheckInTime());
         dto.setCheckOutTime(entity.getCheckOutTime());
+        dto.setWeekendSurchargePercent(entity.getWeekendSurchargePercent());
         BaseMapper.mapAuditFields(entity, dto);
         return dto;
     }
@@ -29,6 +30,7 @@ public class HotelInfoMapper {
         entity.setNumberOfFloors(dto.getNumberOfFloors());
         entity.setCheckInTime(dto.getCheckInTime());
         entity.setCheckOutTime(dto.getCheckOutTime());
+        entity.setWeekendSurchargePercent(dto.getWeekendSurchargePercent());
         return entity;
     }
 }
