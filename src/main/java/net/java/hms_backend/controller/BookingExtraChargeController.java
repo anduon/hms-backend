@@ -40,4 +40,10 @@ public class BookingExtraChargeController {
     public ResponseEntity<List<BookingExtraChargeDto>> getAll() {
         return ResponseEntity.ok(service.getAll());
     }
+
+    @GetMapping("/booking/{bookingId}")
+    public ResponseEntity<List<BookingExtraChargeDto>> getByBookingId(@PathVariable Long bookingId) {
+        return ResponseEntity.ok(service.getByBookingId(bookingId));
+    }
+
 }

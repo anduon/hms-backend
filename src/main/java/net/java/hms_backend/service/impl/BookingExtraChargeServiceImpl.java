@@ -95,4 +95,16 @@ public class BookingExtraChargeServiceImpl implements BookingExtraChargeService 
                 .toList();
     }
 
+    @Override
+    public List<BookingExtraChargeDto> getByBookingId(Long bookingId) {
+        bookingRepo.findById(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Booking", "id", bookingId));
+
+        List<BookingExtraCharge> entities = extraChargeRepo.findByBookingId(bookingId);
+
+        return entities.stream()
+                .map(BookingExtraChargeMapper::toDto)
+                .toList();
+    }
+
 }

@@ -10,4 +10,5 @@ public interface BookingExtraChargeService {
     void delete(Long id);
     BookingExtraChargeDto getById(Long id);
     List<BookingExtraChargeDto> getAll();
+    List<BookingExtraChargeDto> getByBookingId(Long bookingId);
 }
