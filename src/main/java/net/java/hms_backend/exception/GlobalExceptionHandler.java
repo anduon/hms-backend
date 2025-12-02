@@ -132,4 +132,11 @@ public class GlobalExceptionHandler {
                 .body(Map.of("message", ex.getMessage()));
     }
 
+    @ExceptionHandler({
+            HotelInfoException.InvalidWeekendSurchargeException.class
+    })
+    public ResponseEntity<Map<String, String>> handleHotelInfoExceptions(HotelInfoException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("message", ex.getMessage()));
+    }
 }
